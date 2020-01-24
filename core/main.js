@@ -22,7 +22,6 @@ const cellSize = 9
 const vobj = new Vobj(cellSize)
 vobj.updateMesh()
 world.add(vobj.mesh)
-world.add(vobj.outline)
 
 // Floor plane grid
 const grid = new THREE.GridHelper(cellSize, cellSize)
