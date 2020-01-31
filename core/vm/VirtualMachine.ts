@@ -1,13 +1,10 @@
 import ALU, { Trit, Tryte, clone, s2t, t2s, n2t, t2n, PLUS_ONE } from './ALU'
 import Memory from './Memory'
 
-const SAVE_RAM_SIZE = 3 ** 4 * 2 - 1 // 161 addresses (4-trit).
-
 export default class VirtualMachine {
   alu = new ALU()
   ram = new Memory()
   rom = new Memory() // Read-only memory, i.e. the cartridge.
-  save = new Memory(SAVE_RAM_SIZE) // Save file memory.
 
   registers = [
     new Register(), // r0
@@ -273,40 +270,19 @@ export default class VirtualMachine {
         break
       }
 
-      // LDC a, b
-      // Loads the data at cartridge ROM address b into a.
-      case 8: {
-        const cellA = this.decodeOperand(operandA)
-        const cellB = this.decodeOperand(operandB)
-
-        cellA.set(this.rom.load(cellB.get()))
-
-        break
-      }
-
-      // LDS a, b
-      // Loads the data at cartridge save RAM address b into a.
+      // XOR a, b
       case 9: {
         const cellA = this.decodeOperand(operandA)
         const cellB = this.decodeOperand(operandB)
 
-        cellA.set(this.save.load(cellB.get()))
+        const out = cellA.get()
+        this.alu.xor(out, cellB.get())
+        cellA.set(out)
 
         break
       }
 
-      // STS a, b
-      // Stores the data of b at cartridge save RAM address a.
-      case 10: {
-        const cellA = this.decodeOperand(operandA)
-        const cellB = this.decodeOperand(operandB)
-
-        this.save.store(cellB.get(), cellA.get())
-
-        break
-      }
-
-      // TODO: opcodes 11, 12, and 13
+      // TODO: opcodes 10-13
 
       default:
         throw new Error('Unknown opcode: ' + t2s(opcode))
