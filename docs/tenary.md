@@ -16,5 +16,5 @@ This means that [there is only one possible representation for zero](https://en.
 and there is no need to separate processor instructions for 'signed' or 'unsigned' integers.
 
 A _trit_ is a single ternary digit and a _tryte_ is a sequence of exactly nine trits. This means
-that a single tryte may store values in the range **++++++++** (19682) to **---------** (-19682),
-which is 39365 unique values. A `tribble` is three trits - a third of a tryte.
+that a single tryte may store values in the range **++++++++** (9841) to **---------** (-9841),
+which is 19683 unique values.
