@@ -259,7 +259,7 @@ export default class VirtualMachine {
         break
       }
 
-      // LDC a, b
+      // LOD a, b
       // Loads the data at cartridge ROM address b into a.
       case 8: {
         const cellA = this.decodeOperand(operandA)
