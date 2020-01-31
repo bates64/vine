@@ -32,7 +32,10 @@ export default class ALU {
     for (let d = 8; d >= 0; d--) {
       const val = a[d] + b[d] + this.carry
 
-      if (val == 2) {
+      if (val == 3) {
+        this.carry = 1
+        a[d] = 0
+      } else if (val == 2) {
         this.carry = 1
         a[d] = -1
       } else if (val == 1) {
@@ -47,6 +50,9 @@ export default class ALU {
       } else if (val == -2) {
         this.carry = -1
         a[d] = 1
+      } else if (val == -3) {
+        this.carry = -1
+        a[d] = 0
       } else {
         throw new Error('Bad trit add result: ' + val)
       }

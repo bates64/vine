@@ -5,6 +5,7 @@
 <style>
   body {
     margin: 0;
+    padding: 2em;
     overflow: hidden;
   }
 
@@ -16,8 +17,34 @@
 
     image-rendering: optimizeSpeed;
   }
+
+  #asm {
+    font-family: monospace;
+  }
 </style>
 
 <body>
+  <h1>VINE asm playground</h1>
+
+  <textarea id='asm' rows='20' cols='80'>; Assembly goes here!
+MOV r0, +++</textarea>
+
+  <div>
+    <div>r0: <code id='r0'>0</code></div>
+    <div>r1: <code id='r1'>0</code></div>
+    <div>r2: <code id='r2'>0</code></div>
+    <div>r3: <code id='r3'>0</code></div>
+    <div>r4: <code id='r4'>0</code></div>
+    <div>r5: <code id='r5'>0</code></div>
+    <div>r6: <code id='r6'>0</code></div>
+    <div>r7: <code id='r7'>0</code></div>
+    <div>r8: <code id='r8'>0</code></div>
+    <div>r9: <code id='r9'>0</code></div>
+    <div>r10: <code id='r10'>0</code></div>
+    <div>r11: <code id='r11'>0</code></div>
+  </div>
+
+  <button id='execute'>Execute</button>
+
   <script src="core/vine.ts"></script>
 </body>

@@ -8,6 +8,8 @@ import { Tryte, t2n, n2t, TRYTE_NUM_VALUES, MAX_TRYTE } from './ALU'
 // efficient than using BCT.
 //
 // [0] http://homepage.divms.uiowa.edu/~jones/ternary/bct.shtml
+//
+// TODO: support negative ram addresses
 export default class Memory {
   // Signed 32-bit integers fit our 9841 through -9841 tryte values.
   block: Int32Array

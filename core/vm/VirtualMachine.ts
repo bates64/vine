@@ -33,6 +33,11 @@ export default class VirtualMachine {
   // Stores the result of the last CMP instruction.
   protected compareResult: Trit = 0
 
+  // Resets the program counter.
+  reset() {
+    this.nextInstruction = n2t(0)
+  }
+
   // Fetches, decodes, and executes the next instruction. Moves the next
   // instruction pointer accordingly.
   next() {
@@ -59,10 +64,12 @@ export default class VirtualMachine {
     const operandB = s2t('oooooo---')
     this.ialu.xor(operandB, xxxyyyzzz)
 
+    /*
     console.debug('instruction:', t2s(xxxyyyzzz))
     console.debug('opcode:     ', t2s(opcode))
     console.debug('operand a:  ', t2s(operandA))
     console.debug('operand b:  ', t2s(operandB))
+    */
 
     // The fun part!!
     //

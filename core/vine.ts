@@ -5,25 +5,23 @@ import assemble from './asm/assemble'
 
 const vm = new VirtualMachine()
 
-const asm = assemble(`
+document.querySelector('#execute').addEventListener('click', () => {
+  vm.reset()
 
-ADD r0, -o ; r0 = 3
+  const asm = assemble(document.querySelector('#asm').value)
 
-; Loop, incrementing r0 until r0 is non-negative
-.loop
-ADD r0, +
-CMP r0, o
-JLT .loop
+  // Copy the object code to ROM
+  for (let i = 0; i < asm.length; i++) {
+    vm.rom.store(n2t(i), asm[i])
+  }
 
-`)
+  // Execute instructions
+  for (let i = 0; i < 1000; i++) {
+    vm.next()
+  }
 
-// Copy the object code to ROM
-for (let i = 0; i < asm.length; i++) {
-  vm.rom.store(n2t(i), asm[i])
-}
-
-// Execute 10 instructions
-for (let i = 0; i < 10; i++) {
-  vm.next()
-  console.log('r0 =', t2n(vm.registers[0].get())) // display r1
-}
+  // Dump registers
+  for (let i = 0; i < 12; i++) {
+    document.querySelector('#r' + i).textContent = t2n(vm.registers[i].get())
+  }
+})
