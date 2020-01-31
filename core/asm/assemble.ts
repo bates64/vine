@@ -7,42 +7,31 @@ export default function assemble(input: string): Tryte[] {
     .map(line => line.replace(/;.*$/, '').trim()) // Remove comments & indentation whitespace
     .filter(line => line.length > 0) // Ignore empty lines
 
-  const out: Tryte[] = []
-  const alu = new ALU()
   const labels: LabelMap = new Map
 
+  // First pass: find label declarations
+  let pc = 0
   for (const line of lines) {
     if (line[0] == '.') {
       // Label declaration.
-      labels.set(line.substr(1), out.length)
+      labels.set(line.substr(1), pc)
     } else {
       // Instruction.
-      let opcodeStr = ''
-      let operandStrA = ''
-      let operandStrB = ''
+      const { operandStrA, operandStrB } = parseInstruction(line)
 
-      let state: 0 | 1 | 2 = 0
-      for (const char of line) {
-        if (state == 0) {
-          if (char == ' ') {
-            state++
-          } else {
-            opcodeStr += char
-          }
-        } else if (state == 1) {
-          if (char == ',') {
-            state++
-          } else {
-            operandStrA += char
-          }
-        } else {
-          if (char == ',') {
-            throw new Error('Too many operands: ' + line)
-          } else {
-            operandStrB += char
-          }
-        }
-      }
+      pc++
+      pc += sizeOfOperandStr(operandStrA)
+      pc += sizeOfOperandStr(operandStrB)
+    }
+  }
+
+  // Second pass: assemble
+  const out: Tryte[] = []
+  const alu = new ALU()
+  for (const line of lines) {
+    if (line[0] != '.') {
+      // Instruction.
+      const { opcodeStr, operandStrA, operandStrB } = parseInstruction(line)
 
       const opcode = assembleOpcodeStr(opcodeStr)
       alu.shiftRight(opcode, n2t(-6))
@@ -64,6 +53,68 @@ export default function assemble(input: string): Tryte[] {
   return out
 }
 
+type ParsedInstruction = {
+  opcodeStr: string
+  operandStrA: string
+  operandStrB: string
+}
+
+function parseInstruction(line: string): ParsedInstruction {
+  let opcodeStr = ''
+  let operandStrA = ''
+  let operandStrB = ''
+
+  let state: 0 | 1 | 2 = 0
+  for (const char of line) {
+    if (state == 0) {
+      if (char == ' ') {
+        state++
+      } else {
+        opcodeStr += char
+      }
+    } else if (state == 1) {
+      if (char == ',') {
+        state++
+      } else {
+        operandStrA += char
+      }
+    } else {
+      if (char == ',') {
+        throw new Error('Too many operands: ' + line)
+      } else {
+        operandStrB += char
+      }
+    }
+  }
+
+  return { opcodeStr, operandStrA, operandStrB }
+}
+
+// Returns the number of immediate trytes this operand will be followed by,
+// if any.
+function sizeOfOperandStr(operand: string): number {
+  if (operand[0] == 'r') {
+    // Register
+    return 0
+  } else if (operand[0] == '.') {
+    // Immediate, labeled
+    return 1
+  } else if (operand[0] == '*') {
+    if (operand[1] == 'r') {
+      // Register-indirect pointer
+      return 0
+    } else if (operand[2] == '.') {
+      throw new Error('ROM label not allowed here: ' + operand)
+    } else {
+      // Immediate-direct pointer
+      return 1
+    }
+  } else {
+    // Immediate
+    return 1
+  }
+}
+
 function assembleOperandStr(operand: string, labels: LabelMap): [ Tryte, Tryte | null ] {
   const parseRegister = (operand: string) => {
     const register = parseInt(operand.substr(1))
@@ -82,8 +133,7 @@ function assembleOperandStr(operand: string, labels: LabelMap): [ Tryte, Tryte |
     // Immediate, labeled
     const addr = labels.get(operand.substr(1))
 
-    if (!addr) {
-      // TODO: lookahead for labels
+    if (typeof addr == 'undefined') {
       throw new Error('Undeclared ROM label: ' + operand.substr(1))
     }
 
