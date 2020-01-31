@@ -136,6 +136,13 @@ export default class ALU {
   //
   // Logical accept anything. For each trit, the a trit takes on the non-unknown
   // trit of a and b. If the a and b trits disagree, the a trit is zeroed.
+  //
+  // You can combine trytes using an ANY:
+  //
+  //     oooooo---
+  // ANY +++oooooo
+  //   = +++ooo---
+  //
   acceptAnything(a: Tryte, b: Tryte) {
     for (let d = 0; d < 9; d++) {
       if (a[d] == 0) a[d] = b[d]

@@ -81,6 +81,8 @@ export default class VirtualMachine {
         break
       }
 
+      // Opcode -12 reserved.
+
       // ADDC a, b
       // Add with previous carry, if any.
       case -11: {
@@ -247,14 +249,14 @@ export default class VirtualMachine {
       }
 
       // JAL a, b
-      // Jumps to address a, setting b to the address of the instruction
+      // Jumps to address b, setting a to the address of the instruction
       // following the JAL instruction (i.e. the return address).
       case 7: {
         const cellA = this.decodeOperand(operandA)
         const cellB = this.decodeOperand(operandB)
 
-        cellB.set(clone(this.nextInstruction))
-        this.nextInstruction = clone(cellA.get())
+        cellA.set(clone(this.nextInstruction))
+        this.nextInstruction = clone(cellB.get())
 
         break
       }
@@ -263,7 +265,7 @@ export default class VirtualMachine {
       // Loads the data at cartridge ROM address b into a.
       case 8: {
         const cellA = this.decodeOperand(operandA)
-        const cellB = this.decodeOperand(operandA)
+        const cellB = this.decodeOperand(operandB)
 
         cellA.set(this.rom.load(cellB.get()))
 
