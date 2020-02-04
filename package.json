@@ -1,19 +1,22 @@
 {
   "name": "vine-console",
-  "description": "Voxel-based 9-trit fantasy console",
+  "description": "Voxel-based 9-trit fantasy console with its own assembly language",
   "author": "Alex Bates (https://imalex.xyz)",
   "license": "0BSD",
   "dependencies": {
     "three": "^0.111.0"
   },
   "devDependencies": {
-    "parcel-bundler": "^1.12.4",
+    "concurrently": "^5.1.0",
+    "es-dev-server": "^1.36.4",
+    "nodemon": "^2.0.2",
     "prettier": "^1.19.1",
+    "sucrase": "^3.12.1",
     "typescript": "^3.7.3"
   },
   "scripts": {
-    "dev": "parcel index.html",
-    "build": "parcel build index.html",
-    "pretty": "prettier --write '**/*.{ts,js,html,md}' index.html --no-semi --trailing-comma all --single-quote"
+    "dev": "concurrently \"es-dev-server --watch\" \"watch -f 'core/**/*.ts' -r 'npm run build'\"",
+    "build": "sucrase ./core -d ./dist --node-resolve --transforms typescript",
+    "pretty": "prettier --write '**/*.{ts,js,html,md}' --no-semi --trailing-comma all --single-quote"
   }
 }
