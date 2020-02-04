@@ -251,6 +251,11 @@ export function t2s(t: Tryte): string {
 
 // String to tryte.
 export function s2t(s: string): Tryte {
+  const decimal = parseInt(s)
+  if (!isNaN(decimal)) {
+    return n2t(decimal)
+  }
+
   const str = s.padStart(9, 'o')
 
   let out = clone(ZERO)

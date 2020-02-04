@@ -1,4 +1,4 @@
-import { Tryte, t2n, n2t, TRYTE_NUM_VALUES, MAX_TRYTE } from './ALU'
+import { Tryte, t2n, n2t, TRYTE_NUM_VALUES, MAX_TRYTE } from './ALU.js'
 
 // Memory interface. Has TRYTE_NUM_VALUES (19683) 9-trit addresses by default,
 // each holding a tryte. All addresses are initialized to zero.

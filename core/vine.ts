@@ -1,12 +1,14 @@
-import VirtualMachine from './vm/VirtualMachine'
-import { s2t, t2s, n2t, t2n } from './vm/ALU'
+import VirtualMachine from './vm/VirtualMachine.js'
+import { s2t, t2s, n2t, t2n } from './vm/ALU.js'
 
-import assemble from './asm/assemble'
+import assemble from './asm/assemble.js'
 
 const vm = new VirtualMachine()
 
-document.querySelector('#execute').addEventListener('click', () => {
+document.querySelector('#reset').addEventListener('click', () => {
   vm.reset()
+
+  console.clear()
 
   const asm = assemble(document.querySelector('#asm').value)
 
@@ -15,10 +17,18 @@ document.querySelector('#execute').addEventListener('click', () => {
     vm.rom.store(n2t(i), asm[i])
   }
 
-  // Execute instructions
-  for (let i = 0; i < 1000; i++) {
-    vm.next()
+  // Reset registers
+  for (let i = 0; i < 12; i++) {
+    vm.registers[i].set(s2t('o'))
+    document.querySelector('#r' + i).textContent = t2n(vm.registers[i].get())
   }
+})
+
+document.querySelector('#step').addEventListener('click', () => {
+  console.log('step pc =', t2s(vm.nextInstruction))
+
+  // Execute instruction
+  vm.next()
 
   // Dump registers
   for (let i = 0; i < 12; i++) {

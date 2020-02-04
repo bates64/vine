@@ -1,4 +1,4 @@
-import ALU, { Tryte, s2t, t2s, n2t } from '../vm/ALU'
+import ALU, { Tryte, s2t, t2s, n2t } from '../vm/ALU.js'
 
 type LabelMap = Map<string, number>
 
@@ -157,6 +157,7 @@ function assembleOperandStr(operand: string, labels: LabelMap): [ Tryte, Tryte |
 function assembleOpcodeStr(str: string): Tryte {
   switch (str.toUpperCase()) {
     case 'ADD': return n2t(-13)
+    // 12
     case 'ADDC': return n2t(-11)
     case 'MUL': return n2t(-10)
     case 'DIV': return n2t(-9)
@@ -172,9 +173,9 @@ function assembleOpcodeStr(str: string): Tryte {
     case 'MOV': return n2t(1)
     case 'CMP': return n2t(2)
     case 'JMP': return n2t(3)
-    case 'JEQ': return n2t(4)
-    case 'JGT': return n2t(5)
-    case 'JLT': return n2t(6)
+    case 'BEQ': return n2t(4)
+    case 'BGT': return n2t(5)
+    case 'BLT': return n2t(6)
     case 'JAL': return n2t(7)
     case 'LOD': return n2t(8)
     case 'XOR': return n2t(9)

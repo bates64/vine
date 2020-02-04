@@ -1,5 +1,5 @@
-import ALU, { Trit, Tryte, clone, s2t, t2s, n2t, t2n, PLUS_ONE } from './ALU'
-import Memory from './Memory'
+import ALU, { Trit, Tryte, clone, s2t, t2s, n2t, t2n, PLUS_ONE } from './ALU.js'
+import Memory from './Memory.js'
 
 export default class VirtualMachine {
   alu = new ALU()
@@ -64,12 +64,10 @@ export default class VirtualMachine {
     const operandB = s2t('oooooo---')
     this.ialu.xor(operandB, xxxyyyzzz)
 
-    /*
     console.debug('instruction:', t2s(xxxyyyzzz))
     console.debug('opcode:     ', t2s(opcode))
     console.debug('operand a:  ', t2s(operandA))
     console.debug('operand b:  ', t2s(operandB))
-    */
 
     // The fun part!!
     //
@@ -225,7 +223,7 @@ export default class VirtualMachine {
         break
       }
 
-      // JEQ a
+      // BEQ a
       case 4: {
         if (this.compareResult == 0) {
           const cellA = this.decodeOperand(operandA)
@@ -235,7 +233,7 @@ export default class VirtualMachine {
         break
       }
 
-      // JGT a
+      // BGT a
       case 5: {
         if (this.compareResult == 1) {
           const cellA = this.decodeOperand(operandA)
@@ -245,7 +243,7 @@ export default class VirtualMachine {
         break
       }
 
-      // JLT a
+      // BLT a
       case 6: {
         if (this.compareResult == -1) {
           const cellA = this.decodeOperand(operandA)
