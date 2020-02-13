@@ -29,9 +29,10 @@ jobs:
     - run: npm run build
 
     - run: |
-      mkdir www
-      cp index.html www
-      mv dist www/dist
+        mkdir www
+        mv index.html www
+        mv web_modules www
+        mv dist www
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v2

@@ -38,7 +38,7 @@ document.querySelector('#step').addEventListener('click', () => {
   }
 })
 
-import * as THREE from '/web_modules/three.js'
+import * as THREE from '../web_modules/three.js'
 
 class Vine {
   canvas2D: HTMLCanvasElement
