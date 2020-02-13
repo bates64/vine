@@ -14,6 +14,7 @@ export default function assemble(input: string): Tryte[] {
   for (const line of lines) {
     if (line[0] == '.') {
       // Label declaration.
+      // XXX: for whatever reason labels must be followed by NOPs
       labels.set(line.substr(1), pc)
     } else {
       // Instruction.

@@ -109,7 +109,7 @@ export default class ALU {
 
   // a ^= b
   //
-  // Logical XOR. Opposite trits are -, like trits are +, and if either trit is
+  // Logical XOR. Opposite trits are +, like trits are -, and if either trit is
   // zero the result is zero.
   //
   // You can select specific trits out of a tryte using an XOR:
@@ -120,10 +120,8 @@ export default class ALU {
   //
   xor(a: Tryte, b: Tryte) {
     for (let d = 0; d < 9; d++) {
-      if (a[d] == 0 || b[d] == 0) a[d] = 0
-      // Zero
-      else if (a[d] == b[d]) a[d] = -1
-      // Like
+      if (a[d] == 0 || b[d] == 0) a[d] = 0 // Zero
+      else if (a[d] == b[d]) a[d] = -1 // Like
       else a[d] = 1 // Unlike
     }
   }
