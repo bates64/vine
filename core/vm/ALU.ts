@@ -1,5 +1,6 @@
 export type Trit = 1 | 0 | -1
 export type Tryte = [Trit, Trit, Trit, Trit, Trit, Trit, Trit, Trit, Trit]
+export type Tribble = [0, 0, 0, 0, 0, 0, Trit, Trit, Trit]
 
 // These tryte constants should be cloned before use - trytes are boxed, so they
 // are not copied during assignment!
@@ -59,6 +60,20 @@ export default class ALU {
     }
   }
 
+  // a *= b
+  //
+  // TODO: don't cheat
+  multiply(a: Tryte, b: Tryte) {
+    this.copy(a, n2t(Math.floor(t2n(a) * t2n(b))))
+  }
+
+  // a /= b
+  //
+  // TODO: don't cheat
+  divide(a: Tryte, b: Tryte) {
+    this.copy(a, n2t(Math.floor(t2n(a) / t2n(b))))
+  }
+
   // Equality/greater-than/less-than comparison.
   //
   //  a > b  ->  +
@@ -78,14 +93,15 @@ export default class ALU {
     return 0 // a == b
   }
 
-  // a *= -1
-  // a = ~a
+  // a = b * -1
+  // a = ~b
   //
   // Tritwise NOT.
-  neg(a: Tryte) {
+  neg(a: Tryte, b: Tryte) {
     for (let d = 0; d < 9; d++) {
-      if (a[d] == 1) a[d] = -1
-      else if (a[d] == -1) a[d] = 1
+      if (b[d] == 1) a[d] = -1
+      else if (b[d] == -1) a[d] = 1
+      else a[d] = 0
     }
   }
 
@@ -120,8 +136,10 @@ export default class ALU {
   //
   xor(a: Tryte, b: Tryte) {
     for (let d = 0; d < 9; d++) {
-      if (a[d] == 0 || b[d] == 0) a[d] = 0 // Zero
-      else if (a[d] == b[d]) a[d] = -1 // Like
+      if (a[d] == 0 || b[d] == 0) a[d] = 0
+      // Zero
+      else if (a[d] == b[d]) a[d] = -1
+      // Like
       else a[d] = 1 // Unlike
     }
   }
@@ -240,9 +258,14 @@ export default class ALU {
 export function t2s(t: Tryte): string {
   return t
     .map(trit => {
-      if (trit == 1) return '+'
-      else if (trit == 0) return 'o'
-      else if (trit == -1) return '-'
+      switch (trit) {
+        case 1:
+          return '+'
+        case 0:
+          return 'o'
+        case -1:
+          return '-'
+      }
     })
     .join('')
 }

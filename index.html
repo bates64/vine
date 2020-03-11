@@ -1,32 +1,58 @@
 <!DOCTYPE html>
-<meta charset='utf-8' />
+<meta charset="utf-8" />
 <title>VINE</title>
-<meta name='viewport' content='width=device-width, initial-scale=1'>
-<link rel='stylesheet' href='https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css'/>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css"
+/>
 
-<body class='w-100 sans-serif pa3 pa5-ns white bg-black'>
-  <h1>VINE asm playground</h1>
+<body class="w-100 sans-serif pa3 white bg-black-80">
+  <div class="flex">
+    <div class="w-50 pa1">
+      <h1>VINE playground</h1>
 
-  <code><textarea class='db border-box w-100 measure-wide ba b--black-20 br2 mb2 bg-black green' id='asm' rows='20'>; Assembly goes here!
-MOV r0, +++</textarea></code>
+      <code
+        ><textarea class="w-100 green bg-black pa2" id="asm" rows="30">
+; This example program implements a simple 'paint' program based
+; on the current mouse position.
 
-  <div class='white'>
-    <div>r0: <code id='r0'></code></div>
-    <div>r1: <code id='r1'></code></div>
-    <div>r2: <code id='r2'></code></div>
-    <div>r3: <code id='r3'></code></div>
-    <div>r4: <code id='r4'></code></div>
-    <div>r5: <code id='r5'></code></div>
-    <div>r6: <code id='r6'></code></div>
-    <div>r7: <code id='r7'></code></div>
-    <div>r8: <code id='r8'></code></div>
-    <div>r9: <code id='r9'></code></div>
-    <div>r10: <code id='r10'></code></div>
-    <div>r11: <code id='r11'></code></div>
+MOV r0, oooo+oooo ; red
+NOP
+NOP
+.loop
+  ; x pos
+  LDA r1, --------- ; mouse x
+  ADD r1, 121
+  DIV r1, 9
+
+  ; y pos
+  LDA r2, --------o ; mouse x
+  ADD r2, 121
+  DIV r2, 9
+
+  ; set cell
+  MUL r2, 54
+  ADD r1, r2
+  ADD r1, o---+---- ; start of tilemap
+  STA r0, r1
+
+  JMP -------oo ; .loop</textarea
+        ></code
+      >
+      <button id="reset" class="mt3">Assemble & reset</button>
+
+      <p>
+        <a href="https://github.com/nanaian/vine/blob/master/docs/cpu.md"
+          >CPU docs</a
+        ><br />
+        <a href="https://github.com/nanaian/vine/blob/master/docs/memory.md"
+          >Memory docs</a
+        ><br />
+      </p>
+    </div>
+    <div id="vine"></div>
   </div>
 
-  <button id='reset'>Assemble</button>
-  <button id='step'>Step</button>
-
-  <script type='module' src='dist/vine.js'></script>
+  <script type="module" src="dist/vine.js"></script>
 </body>

@@ -24,13 +24,15 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-node-
 
-    - run: npm ci
+    - run: |
+        npm ci
+        npx snowpack --optimize
 
     - run: npm run build
 
     - run: |
         mkdir www
-        mv index.html www
+        mv *.html www
         mv web_modules www
         mv dist www
 

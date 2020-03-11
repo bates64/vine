@@ -1,15 +1,18 @@
-import * as THREE from 'three'
+import * as THREE from '/web_modules/three.js'
 
-import Vobj from './Vobj'
-import Input from './Input'
+import Vobj from './Vobj.js'
+import Input from './Input.js'
 
 const scene = new THREE.Scene()
 scene.background = new THREE.Color('lightblue')
 
 const renderer = new THREE.WebGLRenderer({ antialias: false })
-renderer.setSize(400, 300)
+renderer.setSize(243, 243)
 
 const canvas = renderer.domElement
+canvas.style.width = 243 * 3 + 'px'
+canvas.style.height = 243 * 3 + 'px'
+canvas.style.imageRendering = 'optimizespeed'
 document.body.appendChild(canvas)
 
 const world = new THREE.Group()
@@ -78,9 +81,9 @@ world.add(boundingBoxMesh)
 const selectionVobj = new Vobj(cellSize)
 world.add(selectionVobj.mesh)
 
-const input = new Input()
+const input = new Input(canvas)
 
-const camera = new THREE.PerspectiveCamera(50, 4 / 3, 0.1, 1000)
+const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000)
 
 camera.position.set(0, 0, cellSize * 2)
 camera.lookAt(world.position)

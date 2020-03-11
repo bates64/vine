@@ -1,7 +1,7 @@
-import * as THREE from 'three'
+import * as THREE from '/web_modules/three.js'
 
 // Voxel objects are three-dimensional objects with uniform width, height,
-// and depth. They are unloaded
+// and depth.
 //
 // Originally based on this lovely tutorial:
 // https://threejsfundamentals.org/threejs/lessons/threejs-voxel-geometry.html

@@ -3,44 +3,11 @@ import { s2t, t2s, n2t, t2n } from './vm/ALU.js'
 
 import assemble from './asm/assemble.js'
 
-const vm = new VirtualMachine()
-
-document.querySelector('#reset').addEventListener('click', () => {
-  vm.reset()
-
-  console.clear()
-
-  const asm = assemble(document.querySelector('#asm').value)
-
-  // Copy the object code to ROM
-  for (let i = 0; i < asm.length; i++) {
-    vm.rom.store(n2t(i), asm[i])
-  }
-
-  // Reset registers
-  for (let i = 0; i < 12; i++) {
-    let val = s2t('o')
-    vm.registers[i].set(val)
-    document.querySelector('#r' + i).textContent = t2s(val) + ' ' + t2n(val)
-  }
-})
-
-document.querySelector('#step').addEventListener('click', () => {
-  console.log('step pc =', t2s(vm.nextInstruction))
-
-  // Execute instruction
-  vm.next()
-
-  // Dump registers
-  for (let i = 0; i < 12; i++) {
-    let val = vm.registers[i].get()
-    document.querySelector('#r' + i).textContent = t2s(val) + ' ' + t2n(val)
-  }
-})
-
-import * as THREE from '../web_modules/three.js'
+import * as THREE from '/web_modules/three.js'
 
 class Vine {
+  stopped = false
+
   canvas2D: HTMLCanvasElement
   canvas3D: HTMLCanvasElement
 
@@ -50,10 +17,13 @@ class Vine {
   renderer: THREE.WebGLRenderer
   camera: THREE.Camera
 
-  constructor(parent: HTMLElement) {
+  vm: VirtualMachine
+  clock: NodeJS.Timeout
+
+  constructor(parent: Element, vm: VirtualMachine) {
     this.canvas2D = document.createElement('canvas') as HTMLCanvasElement
-    this.canvas2D.width = 360
-    this.canvas2D.height = 360
+    this.canvas2D.width = 243
+    this.canvas2D.height = 243
 
     this.canvas3D = document.createElement('canvas') as HTMLCanvasElement
 
@@ -66,7 +36,7 @@ class Vine {
       canvas: this.canvas3D,
       antialias: false,
     })
-    this.renderer.setSize(360, 360)
+    this.renderer.setSize(243, 243)
 
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000)
 
@@ -75,7 +45,8 @@ class Vine {
     this.canvas2D.style.left = this.canvas3D.style.left = '0'
     this.canvas2D.style.width = this.canvas3D.style.width = '720px'
     this.canvas2D.style.height = this.canvas3D.style.height = '720px'
-    this.canvas2D.style.imageRendering = this.canvas3D.style.imageRendering = 'optimizespeed'
+    this.canvas2D.style.imageRendering = this.canvas3D.style.imageRendering =
+      'optimizespeed'
 
     parent.style.position = 'relative'
     parent.style.width = '720px'
@@ -84,40 +55,144 @@ class Vine {
     // 2D appears above 3D
     parent.appendChild(this.canvas3D)
     parent.appendChild(this.canvas2D)
+
+    this.canvas2D.addEventListener('mousemove', evt => {
+      const ndc = {
+        // (0, 0) is middle of canvas and (1, 1) is bottom right.
+        x: (evt.offsetX / 720) * 2 - 1,
+        y: (evt.offsetY / 720) * 2 - 1,
+      }
+
+      const x = Math.round(ndc.x * 121.5)
+      const y = Math.round(ndc.y * 121.5)
+      this.vm.ram.store(x, s2t('---------'))
+      this.vm.ram.store(y, s2t('--------o'))
+    })
+
+    this.vm = vm
+
+    // TEMP
+    this.vm.ram.store(s2t('+++oooooo'), s2t('ooo-+----'))
+
+    // CPU loop
+    const clockIntervalSecs = 0.01
+    const clockMegahertz = 5
+    const instructionsPerClockCycle = clockMegahertz / clockIntervalSecs
+    this.clock = setInterval(() => {
+      if (document.hasFocus()) {
+        for (let i = 0; i < instructionsPerClockCycle; i++) {
+          this.vm.next()
+        }
+      }
+    }, clockIntervalSecs * 1000)
+
+    // Draw loop
+    let then = Date.now()
+    const fpsInterval = 1000 / 30
+    const drawLoop = () => {
+      const now = Date.now()
+      const elapsed = now - then
+
+      if (elapsed > fpsInterval && document.hasFocus()) {
+        then = now - (elapsed % fpsInterval)
+
+        this.draw()
+      }
+
+      if (!this.stopped) {
+        requestAnimationFrame(drawLoop)
+      }
+    }
+    drawLoop()
   }
 
   draw() {
-    // Draw 2D
-    this.ctx.clearRect(0, 0, 360, 360)
-    this.ctx.fillStyle = 'red'
-    this.ctx.fillRect(0, 0, 1, 1)
-
-    // Draw 3D
     this.renderer.render(this.scene, this.camera)
+    this.drawTilemap()
+  }
+
+  drawTilemap() {
+    let tx = 0
+    let ty = 0
+    for (let addr = -3118; addr < -202; addr++) {
+      const x = tx * 9
+      const y = ty * 9
+
+      const [s0, s1, s2, s3, s4, p0, p1, flip, _unused] = this.vm.ram.load(addr)
+      const sprite = t2n([0, 0, 0, 0, s0, s1, s2, s3, s4])
+      const palette = t2n([0, 0, 0, 0, 0, 0, 0, p0, p1])
+
+      if (sprite == 0) {
+        const paletteAddress = t2n(s2t('ooo-+----')) + palette
+        const rgb = this.vm.ram.load(paletteAddress)
+
+        const red = t2n([0, 0, 0, 0, 0, 0, rgb[0], rgb[1], rgb[2]])
+        const green = t2n([0, 0, 0, 0, 0, 0, rgb[3], rgb[4], rgb[5]])
+        const blue = t2n([0, 0, 0, 0, 0, 0, rgb[6], rgb[7], rgb[8]])
+
+        if (red >= 0 && green >= 0 && blue >= 0) {
+          const redHex = Math.floor(255 * (red / 13))
+            .toString(16)
+            .padStart(2, '0')
+          const greenHex = Math.floor(255 * (green / 13))
+            .toString(16)
+            .padStart(2, '0')
+          const blueHex = Math.floor(255 * (blue / 13))
+            .toString(16)
+            .padStart(2, '0')
+
+          this.ctx.fillStyle = `#${redHex}${greenHex}${blueHex}`
+          this.ctx.fillRect(x, y, 9, 9)
+        } else {
+          // Transparent
+        }
+      } else if (sprite == 1) {
+        this.ctx.fillStyle = 'blue'
+        this.ctx.fillRect(x, y, 9, 9)
+      }
+
+      tx++
+      if (tx == 54) {
+        tx = 0
+        ty++
+      }
+    }
+  }
+
+  stop() {
+    this.stopped = true
+    clearInterval(this.clock)
   }
 }
 
-const div = document.createElement('div')
-const vine = new Vine(div)
+const resetBtn = document.querySelector('#reset') as HTMLButtonElement
+const asmTextarea = document.querySelector('textarea') as HTMLTextAreaElement
 
-vine.camera.position.y = 4
-vine.camera.position.z = -10
-vine.camera.lookAt(vine.scene.position)
+let vine: Vine | null = null
+function reset() {
+  if (vine) {
+    vine.stop()
+  }
 
-const boundingBox = new THREE.BoxBufferGeometry(2, 2, 2)
-const edges = new THREE.EdgesGeometry(boundingBox)
-const outline = new THREE.LineSegments(
-  edges,
-  new THREE.LineBasicMaterial({ color: 0xffffff }),
-)
-vine.scene.add(outline)
+  const div = document.querySelector('#vine')
+  if (!div) throw new Error('missing #vine')
 
-function loop() {
-  outline.rotation.y += 0.01
+  const cartridge = assemble(asmTextarea.value)
+  const vm = new VirtualMachine(cartridge)
+  vine = new Vine(div, vm)
 
-  vine.draw()
-  requestAnimationFrame(loop)
+  vine.camera.position.y = 4
+  vine.camera.position.z = -10
+  vine.camera.lookAt(vine.scene.position)
+
+  const boundingBox = new THREE.BoxBufferGeometry(9, 9, 9)
+  const edges = new THREE.EdgesGeometry(boundingBox)
+  const outline = new THREE.LineSegments(
+    edges,
+    new THREE.LineBasicMaterial({ color: 0xffffff }),
+  )
+  vine.scene.add(outline)
 }
-loop()
 
-document.body.prepend(div)
+reset()
+resetBtn.addEventListener('click', reset)

@@ -4,4 +4,10 @@
     "node_modules/**": true,
     "web_modules/**": true,
   },
+  "cSpell.words": [
+    "trits",
+    "trit",
+    "trytes",
+    "tryte"
+  ],
 }

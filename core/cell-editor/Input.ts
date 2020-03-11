@@ -1,13 +1,13 @@
-const CANVAS_WIDTH = 400 * 3
-const CANVAS_HEIGHT = 300 * 3
+const CANVAS_WIDTH = 243 * 3
+const CANVAS_HEIGHT = 243 * 3
 
 export default class Input {
-  constructor() {
+  constructor(canvas) {
     this.leftMouse = -2
     this.rightMouse = -2
     this.middleMouse = -2
 
-    document.addEventListener('mousedown', evt => {
+    canvas.addEventListener('mousedown', evt => {
       if (evt.button == 0) {
         this.leftMouse = 1
       } else if (evt.button == 1) {
@@ -17,7 +17,7 @@ export default class Input {
       }
     })
 
-    document.addEventListener('mouseup', evt => {
+    canvas.addEventListener('mouseup', evt => {
       if (evt.button == 0) {
         this.leftMouse = -1
       } else if (evt.button == 1) {
@@ -27,15 +27,15 @@ export default class Input {
       }
     })
 
-    document.addEventListener('contextmenu', evt => evt.preventDefault())
+    canvas.addEventListener('contextmenu', evt => evt.preventDefault())
 
     this.mousePos = this.mousePosDelta = { x: 0, y: 0 }
 
-    document.addEventListener('mousemove', evt => {
+    canvas.addEventListener('mousemove', evt => {
       const ndc = {
         // (0, 0) is middle of canvas and (1, 1) is top right.
-        x: (evt.clientX / CANVAS_WIDTH) * 2 - 1,
-        y: -(evt.clientY / CANVAS_HEIGHT) * 2 + 1,
+        x: (evt.offsetX / CANVAS_WIDTH) * 2 - 1,
+        y: -(evt.offsetY / CANVAS_HEIGHT) * 2 + 1,
       }
 
       this.mousePosDelta = {
