@@ -35,6 +35,7 @@ jobs:
         mv *.html www
         mv web_modules www
         mv dist www
+        echo "vine.imalex.xyz" > www/CNAME
 
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v2
