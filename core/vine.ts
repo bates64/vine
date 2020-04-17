@@ -245,7 +245,7 @@ if (tbody) {
     addrEl.innerText = t2s(address)
 
     const valueEl = document.createElement('td')
-    valueEl.innerText = 'ooooooooo'
+    valueEl.innerText = ''
 
     symbolWatchers.push([address, valueEl])
 
@@ -269,6 +269,7 @@ function reset() {
   vine = new Vine(div, vm)
 
   for (const [addr, el] of symbolWatchers) {
+    el.innerText = ''
     vm.ram.watchWrite(addr, el)
   }
 
