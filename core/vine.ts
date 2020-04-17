@@ -64,6 +64,8 @@ class Vine {
     parent.appendChild(this.canvas3D)
     parent.appendChild(this.canvas2D)
 
+    this.vm.ram.store(s2t('---------'), symbols.MOUSE_BTN)
+
     this.canvas2D.addEventListener('mousemove', evt => {
       const ndc = {
         // (0, 0) is middle of canvas and (1, 1) is bottom right.
