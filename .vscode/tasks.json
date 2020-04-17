@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+    {
+      "label": "Serve",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "isBackground": true,
+      "dependsOn": [
+        {
+          "type": "npm",
+          "script": "start",
+          "isBackground": true,
+        },
+        {
+          "type": "npm",
+          "script": "watch",
+          "isBackground": true,
+        },
+      ],
+      "dependsOrder": "parallel",
+    },
+  ]
+}
