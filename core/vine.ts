@@ -64,7 +64,7 @@ class Vine {
     parent.appendChild(this.canvas3D)
     parent.appendChild(this.canvas2D)
 
-    this.vm.ram.store(s2t('---------'), symbols.MOUSE_BTN)
+    this.vm.ram.store(s2t('oo-oo-oo-'), symbols.MOUSE_BTN)
 
     this.canvas2D.addEventListener('mousemove', evt => {
       const ndc = {
@@ -120,15 +120,15 @@ class Vine {
       if (evt.button === 0) {
         // Left
         alu.xor(btn, s2t('ooo------'))
-        alu.max(btn, s2t('oo-------'))
+        alu.min(btn, s2t('oo-++++++'))
       } else if (evt.button === 1) {
         // Middle
         alu.xor(btn, s2t('---ooo---'))
-        alu.max(btn, s2t('---oo----'))
+        alu.min(btn, s2t('+++oo-+++'))
       } else if (evt.button === 2) {
         // Right
         alu.xor(btn, s2t('------ooo'))
-        alu.max(btn, s2t('------oo-'))
+        alu.min(btn, s2t('++++++oo-'))
       }
 
       this.vm.ram.store(btn, symbols.MOUSE_BTN)
