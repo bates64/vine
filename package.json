@@ -18,6 +18,6 @@
     "start": "es-dev-server --watch",
     "build": "sucrase ./core -d ./dist --node-resolve --transforms typescript",
     "watch": "watch \"npm run build\" core",
-    "pretty": "prettier --write '**/*.{ts,js,html,md}' --no-semi --trailing-comma all --single-quote"
+    "pretty": "prettier --write **/*.{ts,js,html,md} --no-semi --trailing-comma all --single-quote"
   }
 }

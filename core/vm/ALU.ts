@@ -294,7 +294,9 @@ export function s2t(s: string): Tryte {
 }
 
 // Tryte to number.
-export function t2n(t: Tryte): number {
+export function t2n(t: Tryte | number): number {
+  if (typeof t === 'number') return t
+
   let n = 0
 
   for (let pow = 0; pow < 9; pow++) {
@@ -310,13 +312,15 @@ export function t2n(t: Tryte): number {
 //
 // Based on:
 // https://github.com/thirdcoder/balanced-ternary/blob/79be6619cc/bt.js#L38-64
-export function n2t(nSigned: number): Tryte {
-  var neg = nSigned < 0
-  var n = Math.abs(nSigned)
-  var s: Trit[] = []
+export function n2t(nSigned: number | Tryte): Tryte {
+  if (typeof nSigned !== 'number') return nSigned
+
+  const neg = nSigned < 0
+  let n = Math.abs(nSigned)
+  const s: Trit[] = []
 
   do {
-    var digit = n % 3
+    let digit = n % 3
 
     // Balance the trit.
     if (digit == 2) {

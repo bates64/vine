@@ -1,9 +1,15 @@
 import VirtualMachine from './vm/VirtualMachine.js'
-import { s2t, t2s, n2t, t2n } from './vm/ALU.js'
+import ALU, { s2t, t2s, n2t, t2n, Tryte } from './vm/ALU.js'
 
 import assemble from './asm/assemble.js'
 
 import * as THREE from '/web_modules/three.js'
+
+const symbols = {
+  MOUSE_X: s2t('---------'),
+  MOUSE_Y: s2t('--------o'),
+  MOUSE_BTN: s2t('--------+'),
+}
 
 class Vine {
   stopped = false
@@ -20,7 +26,9 @@ class Vine {
   vm: VirtualMachine
   clock: NodeJS.Timeout
 
-  constructor(parent: Element, vm: VirtualMachine) {
+  constructor(parent: HTMLElement, vm: VirtualMachine) {
+    this.vm = vm
+
     this.canvas2D = document.createElement('canvas') as HTMLCanvasElement
     this.canvas2D.width = 243
     this.canvas2D.height = 243
@@ -65,11 +73,66 @@ class Vine {
 
       const x = Math.round(ndc.x * 121.5)
       const y = Math.round(ndc.y * 121.5)
-      this.vm.ram.store(x, s2t('---------'))
-      this.vm.ram.store(y, s2t('--------o'))
+      this.vm.ram.store(x, symbols.MOUSE_X)
+      this.vm.ram.store(y, symbols.MOUSE_Y)
     })
 
-    this.vm = vm
+    this.canvas2D.addEventListener('mousedown', evt => {
+      // The MOUSE_BTN tryte is made up of three trybbles:
+      //
+      //     LLL MMM RRR
+      //     |   |   |
+      //     |   |   +---- Right mouse button
+      //     |   |
+      //     |   +-------- Middle mouse button
+      //     |
+      //     +------------ Left mouse button
+      //
+      // For each trybble, the value -1 means the button is not down, and a value of 1 means the
+      // button is down. Other values are reserved for later use.
+
+      const btn = this.vm.ram.load(symbols.MOUSE_BTN)
+      const alu = new ALU()
+
+      if (evt.button === 0) {
+        // Left
+        alu.xor(btn, s2t('ooo------'))
+        alu.max(btn, s2t('oo+------'))
+      } else if (evt.button === 1) {
+        // Middle
+        alu.xor(btn, s2t('---ooo---'))
+        alu.max(btn, s2t('---oo+---'))
+      } else if (evt.button === 2) {
+        // Right
+        alu.xor(btn, s2t('------ooo'))
+        alu.max(btn, s2t('------oo+'))
+      }
+
+      this.vm.ram.store(btn, symbols.MOUSE_BTN)
+    })
+
+    this.canvas2D.addEventListener('mouseup', evt => {
+      const btn = this.vm.ram.load(symbols.MOUSE_BTN)
+      const alu = new ALU()
+
+      if (evt.button === 0) {
+        // Left
+        alu.xor(btn, s2t('ooo------'))
+        alu.max(btn, s2t('oo-------'))
+      } else if (evt.button === 1) {
+        // Middle
+        alu.xor(btn, s2t('---ooo---'))
+        alu.max(btn, s2t('---oo----'))
+      } else if (evt.button === 2) {
+        // Right
+        alu.xor(btn, s2t('------ooo'))
+        alu.max(btn, s2t('------oo-'))
+      }
+
+      this.vm.ram.store(btn, symbols.MOUSE_BTN)
+    })
+
+    this.canvas2D.addEventListener('contextmenu', evt => evt.preventDefault())
 
     // TEMP
     this.vm.ram.store(s2t('+++oooooo'), s2t('ooo-+----'))
@@ -168,18 +231,46 @@ class Vine {
 const resetBtn = document.querySelector('#reset') as HTMLButtonElement
 const asmTextarea = document.querySelector('textarea') as HTMLTextAreaElement
 
+// Create symbol table
+const tbody: HTMLElement | null = document.querySelector('#symbol-table-body')
+const symbolWatchers: [Tryte, HTMLTableDataCellElement][] = []
+if (tbody) {
+  for (const [name, address] of Object.entries(symbols)) {
+    const tr = document.createElement('tr')
+
+    const nameEl = document.createElement('td')
+    nameEl.innerText = name
+
+    const addrEl = document.createElement('td')
+    addrEl.innerText = t2s(address)
+
+    const valueEl = document.createElement('td')
+    valueEl.innerText = 'ooooooooo'
+
+    symbolWatchers.push([address, valueEl])
+
+    tr.append(nameEl, addrEl, valueEl)
+
+    tbody.appendChild(tr)
+  }
+}
+
 let vine: Vine | null = null
 function reset() {
   if (vine) {
     vine.stop()
   }
 
-  const div = document.querySelector('#vine')
+  const div: HTMLDivElement | null = document.querySelector('#vine')
   if (!div) throw new Error('missing #vine')
 
   const cartridge = assemble(asmTextarea.value)
   const vm = new VirtualMachine(cartridge)
   vine = new Vine(div, vm)
+
+  for (const [addr, el] of symbolWatchers) {
+    vm.ram.watchWrite(addr, el)
+  }
 
   vine.camera.position.y = 4
   vine.camera.position.z = -10
