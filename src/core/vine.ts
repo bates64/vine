@@ -5,12 +5,6 @@ import assemble from './asm/assemble.js'
 
 import * as THREE from 'three'
 
-export const symbols = {
-  MOUSE_X: s2t('---------'),
-  MOUSE_Y: s2t('--------o'),
-  MOUSE_BTN: s2t('--------+'),
-}
-
 export default class VineCanvas {
   stopped = true
 
@@ -64,8 +58,6 @@ export default class VineCanvas {
     parent.appendChild(this.canvas3D)
     parent.appendChild(this.canvas2D)
 
-    this.vm.ram.store(s2t('oo-oo-oo-'), symbols.MOUSE_BTN)
-
     this.canvas2D.addEventListener('mousemove', evt => {
       const ndc = {
         // (0, 0) is middle of canvas and (1, 1) is bottom right.
@@ -73,71 +65,13 @@ export default class VineCanvas {
         y: (evt.offsetY / 720) * 2 - 1,
       }
 
-      const x = Math.round(ndc.x * 121.5)
-      const y = Math.round(ndc.y * 121.5)
-      this.vm.ram.store(x, symbols.MOUSE_X)
-      this.vm.ram.store(y, symbols.MOUSE_Y)
+      this.vm.setMousePos(Math.round(ndc.x * 121.5), Math.round(ndc.y * 121.5))
     })
 
-    this.canvas2D.addEventListener('mousedown', evt => {
-      // The MOUSE_BTN tryte is made up of three trybbles:
-      //
-      //     LLL MMM RRR
-      //     |   |   |
-      //     |   |   +---- Right mouse button
-      //     |   |
-      //     |   +-------- Middle mouse button
-      //     |
-      //     +------------ Left mouse button
-      //
-      // For each trybble, the value -1 means the button is not down, and a value of 1 means the
-      // button is down. Other values are reserved for later use.
-
-      const btn = this.vm.ram.load(symbols.MOUSE_BTN)
-      const alu = new ALU()
-
-      if (evt.button === 0) {
-        // Left
-        alu.xor(btn, s2t('ooo------'))
-        alu.max(btn, s2t('oo+------'))
-      } else if (evt.button === 1) {
-        // Middle
-        alu.xor(btn, s2t('---ooo---'))
-        alu.max(btn, s2t('---oo+---'))
-      } else if (evt.button === 2) {
-        // Right
-        alu.xor(btn, s2t('------ooo'))
-        alu.max(btn, s2t('------oo+'))
-      }
-
-      this.vm.ram.store(btn, symbols.MOUSE_BTN)
-    })
-
-    this.canvas2D.addEventListener('mouseup', evt => {
-      const btn = this.vm.ram.load(symbols.MOUSE_BTN)
-      const alu = new ALU()
-
-      if (evt.button === 0) {
-        // Left
-        alu.xor(btn, s2t('ooo------'))
-        alu.min(btn, s2t('oo-++++++'))
-      } else if (evt.button === 1) {
-        // Middle
-        alu.xor(btn, s2t('---ooo---'))
-        alu.min(btn, s2t('+++oo-+++'))
-      } else if (evt.button === 2) {
-        // Right
-        alu.xor(btn, s2t('------ooo'))
-        alu.min(btn, s2t('++++++oo-'))
-      }
-
-      this.vm.ram.store(btn, symbols.MOUSE_BTN)
-    })
+    this.canvas2D.addEventListener('mousedown', evt => { this.vm.setMouseButton(evt.button, true) })
+    this.canvas2D.addEventListener('mouseup', evt => { this.vm.setMouseButton(evt.button, false) })
 
     this.canvas2D.addEventListener('contextmenu', evt => evt.preventDefault())
-
-    // TEMP
-    this.vm.ram.store(s2t('+++oooooo'), s2t('ooo-+----'))
   }
 
   draw() {
@@ -145,7 +79,8 @@ export default class VineCanvas {
     this.drawTilemap()
   }
 
-  drawTilemap() {
+  drawTilemap() { // TODO
+    /*
     let tx = 0
     let ty = 0
     for (let addr = -3118; addr < -202; addr++) {
@@ -191,23 +126,14 @@ export default class VineCanvas {
         ty++
       }
     }
+    */
   }
 
   start() {
     if (!this.stopped) this.stop()
     this.stopped = false
 
-    // CPU loop
-    const clockIntervalSecs = 0.01
-    const clockMegahertz = 5
-    const instructionsPerClockCycle = clockMegahertz / clockIntervalSecs
-    this.clock = setInterval(() => {
-      if (document.hasFocus()) {
-        for (let i = 0; i < instructionsPerClockCycle; i++) {
-          this.vm.next()
-        }
-      }
-    }, clockIntervalSecs * 1000)
+    this.vm.start()
 
     // Draw loop
     let then = Date.now()
@@ -233,6 +159,6 @@ export default class VineCanvas {
 
   stop() {
     this.stopped = true
-    if (this.clock) clearInterval(this.clock)
+    this.vm.stop()
   }
 }

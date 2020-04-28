@@ -1,6 +1,16 @@
+import * as comlink from 'comlink'
+
 import ALU, { Trit, Tryte, clone, s2t, t2s, n2t, t2n, PLUS_ONE } from './ALU.js'
 import { Instruction, shiftInstruction } from './Instruction.js'
 import Memory from './Memory.js'
+
+import assemble from '../asm/assemble'
+
+export const symbols = {
+  MOUSE_X: s2t('---------'),
+  MOUSE_Y: s2t('--------o'),
+  MOUSE_BTN: s2t('--------+'),
+}
 
 export enum Operation {
   INT = -40, // TODO; interrupts are no longer planned
@@ -36,7 +46,7 @@ const A0 = 4,
 
 export default class VirtualMachine {
   alu = new ALU()
-  ram: Memory
+  private ram: Memory | null = null
 
   registers = [
     n2t(0), // t0
@@ -59,24 +69,13 @@ export default class VirtualMachine {
   // Program counter.
   protected nextInstruction = s2t('---------')
 
-  constructor(cartridge: Memory) {
-    this.ram = cartridge
-  }
-
-  pushRegisters(...indexes: number[]) {
-    const sp = this.registers[SP]
-
-    for (const index of indexes) {
-      this.ialu.add(sp, PLUS_ONE)
-      this.ram.store(clone(this.registers[index]), sp)
-    }
-
-    this.registers[SP]
-  }
+  private clock: number | undefined
 
   // Fetches, decodes, and executes the next instruction. Moves the next
   // instruction pointer accordingly.
   next() {
+    if (!this.ram) throw new Error('No cartridge loaded')
+
     /*
     // Handle interrupts, if there are any.
     const interrupt = this.interruptQueue.pop()
@@ -218,10 +217,84 @@ export default class VirtualMachine {
 
   // Fetches the next tryte from memory and moves the next instruction pointer accordingly.
   shift(): Tryte {
+    if (!this.ram) return n2t(0)
+
     const tryte = this.ram.load(this.nextInstruction)
 
     this.ialu.add(this.nextInstruction, PLUS_ONE)
 
     return tryte
   }
+
+  start() {
+    if (this.clock) this.stop()
+    if (!this.ram) throw new Error('No cartridge loaded')
+
+    // CPU loop
+    const clockIntervalSecs = 0.01
+    const clockMegahertz = 5
+    const instructionsPerClockCycle = clockMegahertz / clockIntervalSecs
+    this.clock = <any>setInterval(() => {
+      for (let i = 0; i < instructionsPerClockCycle; i++) {
+        this.next()
+      }
+    }, clockIntervalSecs * 1000)
+  }
+
+  stop() {
+    if (this.clock) {
+      clearInterval(this.clock)
+      this.clock = undefined
+    }
+  }
+
+  assembleAndLoad(cartridge: string) {
+    this.ram = assemble(cartridge)
+  }
+
+  setMousePos(x: number, y: number) {
+    this.ram?.store(x, symbols.MOUSE_X)
+    this.ram?.store(y, symbols.MOUSE_Y)
+  }
+
+  setMouseButton(button: number, down: boolean) {
+    if (!this.ram) return
+
+    // The MOUSE_BTN tryte is made up of three trybbles:
+    //
+    //     LLL MMM RRR
+    //     |   |   |
+    //     |   |   +---- Right mouse button
+    //     |   |
+    //     |   +-------- Middle mouse button
+    //     |
+    //     +------------ Left mouse button
+    //
+    // For each trybble, the value -1 means the button is not down, and a value of 1 means the
+    // button is down. Other values are reserved for later use.
+
+    const btn = this.ram.load(symbols.MOUSE_BTN)
+    const alu = new ALU()
+
+    if (button === 0) {
+      // Left
+      alu.xor(btn, s2t('ooo------'))
+      if (down) alu.max(btn, s2t('oo+------'))
+      else alu.min(btn, s2t('oo-++++++'))
+    } else if (button === 1) {
+      // Middle
+      alu.xor(btn, s2t('---ooo---'))
+      if (down) alu.max(btn, s2t('---oo+---'))
+      else alu.min(btn, s2t('+++oo-+++'))
+    } else if (button === 2) {
+      // Right
+      alu.xor(btn, s2t('------ooo'))
+      if (down) alu.max(btn, s2t('------oo+'))
+      else alu.min(btn, s2t('++++++oo-'))
+    }
+
+    this.ram.store(btn, symbols.MOUSE_BTN)
+  }
 }
+
+comlink.expose(VirtualMachine)

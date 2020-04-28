@@ -1,14 +1,23 @@
 <script>
-	import { onMount } from 'svelte'
-	import VineCanvas from './vine.ts'
+	import { onMount, onDestroy } from 'svelte'
+	import * as comlink from 'comlink'
 
-	export let vm
+	import VineCanvas from './vine.ts'
+	import VirtualMachineWorker from 'web-worker:./vm/VirtualMachine.ts'
+
+	const VirtualMachine = comlink.wrap(new VirtualMachineWorker())
+
+	export let vm = null
 
 	let parentEl, vine
 
-	onMount(() => {
+	onMount(async () => {
+		vm = await new VirtualMachine()
 		vine = new VineCanvas(parentEl, vm)
-		vine.start()
+	})
+
+	onDestroy(() => {
+		if (vm) vm.terminate()
 	})
 </script>
 

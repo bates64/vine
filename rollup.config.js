@@ -4,6 +4,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import typescript from '@rollup/plugin-typescript';
+import workerLoader from 'rollup-plugin-web-worker-loader'
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -16,6 +17,8 @@ export default {
 		file: 'public/build/bundle.js'
 	},
 	plugins: [
+		workerLoader(),
+
 		typescript({ noEmitOnError: true }),
 
 		svelte({
