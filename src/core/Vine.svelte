@@ -1,15 +1,14 @@
 <script>
 	import { onMount } from 'svelte'
-
 	import VineCanvas from './vine.ts'
-	import VirtualMachine from './vm/VirtualMachine.js'
 
-	export let vm = new VirtualMachine() // TODO: assemble a 'No Cart Loaded' screen
+	export let vm
 
 	let parentEl, vine
 
 	onMount(() => {
 		vine = new VineCanvas(parentEl, vm)
+		vine.start()
 	})
 </script>
 

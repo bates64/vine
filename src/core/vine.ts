@@ -195,6 +195,7 @@ export default class VineCanvas {
 
   start() {
     if (!this.stopped) this.stop()
+    this.stopped = false
 
     // CPU loop
     const clockIntervalSecs = 0.01
@@ -227,7 +228,6 @@ export default class VineCanvas {
     }
     drawLoop()
 
-    this.stopped = false
     return true
   }
 
