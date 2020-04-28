@@ -5,14 +5,14 @@ import assemble from './asm/assemble.js'
 
 import * as THREE from 'three'
 
-const symbols = {
+export const symbols = {
   MOUSE_X: s2t('---------'),
   MOUSE_Y: s2t('--------o'),
   MOUSE_BTN: s2t('--------+'),
 }
 
-class Vine {
-  stopped = false
+export default class VineCanvas {
+  stopped = true
 
   canvas2D: HTMLCanvasElement
   canvas3D: HTMLCanvasElement
@@ -24,7 +24,7 @@ class Vine {
   camera: THREE.Camera
 
   vm: VirtualMachine
-  clock: NodeJS.Timeout
+  clock: NodeJS.Timeout | undefined
 
   constructor(parent: HTMLElement, vm: VirtualMachine) {
     this.vm = vm
@@ -138,37 +138,6 @@ class Vine {
 
     // TEMP
     this.vm.ram.store(s2t('+++oooooo'), s2t('ooo-+----'))
-
-    // CPU loop
-    const clockIntervalSecs = 0.01
-    const clockMegahertz = 5
-    const instructionsPerClockCycle = clockMegahertz / clockIntervalSecs
-    this.clock = setInterval(() => {
-      if (document.hasFocus()) {
-        for (let i = 0; i < instructionsPerClockCycle; i++) {
-          this.vm.next()
-        }
-      }
-    }, clockIntervalSecs * 1000)
-
-    // Draw loop
-    let then = Date.now()
-    const fpsInterval = 1000 / 30
-    const drawLoop = () => {
-      const now = Date.now()
-      const elapsed = now - then
-
-      if (elapsed > fpsInterval && document.hasFocus()) {
-        then = now - (elapsed % fpsInterval)
-
-        this.draw()
-      }
-
-      if (!this.stopped) {
-        requestAnimationFrame(drawLoop)
-      }
-    }
-    drawLoop()
   }
 
   draw() {
@@ -224,69 +193,46 @@ class Vine {
     }
   }
 
+  start() {
+    if (!this.stopped) this.stop()
+
+    // CPU loop
+    const clockIntervalSecs = 0.01
+    const clockMegahertz = 5
+    const instructionsPerClockCycle = clockMegahertz / clockIntervalSecs
+    this.clock = setInterval(() => {
+      if (document.hasFocus()) {
+        for (let i = 0; i < instructionsPerClockCycle; i++) {
+          this.vm.next()
+        }
+      }
+    }, clockIntervalSecs * 1000)
+
+    // Draw loop
+    let then = Date.now()
+    const fpsInterval = 1000 / 30
+    const drawLoop = () => {
+      const now = Date.now()
+      const elapsed = now - then
+
+      if (elapsed > fpsInterval && document.hasFocus()) {
+        then = now - (elapsed % fpsInterval)
+
+        this.draw()
+      }
+
+      if (!this.stopped) {
+        requestAnimationFrame(drawLoop)
+      }
+    }
+    drawLoop()
+
+    this.stopped = false
+    return true
+  }
+
   stop() {
     this.stopped = true
-    clearInterval(this.clock)
+    if (this.clock) clearInterval(this.clock)
   }
 }
-
-const resetBtn = document.querySelector('#reset') as HTMLButtonElement
-const asmTextarea = document.querySelector('textarea') as HTMLTextAreaElement
-
-// Create symbol table
-const tbody: HTMLElement | null = document.querySelector('#symbol-table-body')
-const symbolWatchers: [Tryte, HTMLTableDataCellElement][] = []
-if (tbody) {
-  for (const [name, address] of Object.entries(symbols)) {
-    const tr = document.createElement('tr')
-
-    const nameEl = document.createElement('td')
-    nameEl.innerText = name
-
-    const addrEl = document.createElement('td')
-    addrEl.innerText = t2s(address)
-
-    const valueEl = document.createElement('td')
-    valueEl.innerText = ''
-
-    symbolWatchers.push([address, valueEl])
-
-    tr.append(nameEl, addrEl, valueEl)
-
-    tbody.appendChild(tr)
-  }
-}
-
-let vine: Vine | null = null
-function reset() {
-  if (vine) {
-    vine.stop()
-  }
-
-  const div: HTMLDivElement | null = document.querySelector('#vine')
-  if (!div) throw new Error('missing #vine')
-
-  const cartridge = assemble(asmTextarea.value)
-  const vm = new VirtualMachine(cartridge)
-  vine = new Vine(div, vm)
-
-  for (const [addr, el] of symbolWatchers) {
-    el.innerText = ''
-    vm.ram.watchWrite(addr, el)
-  }
-
-  vine.camera.position.y = 4
-  vine.camera.position.z = -10
-  vine.camera.lookAt(vine.scene.position)
-
-  const boundingBox = new THREE.BoxBufferGeometry(9, 9, 9)
-  const edges = new THREE.EdgesGeometry(boundingBox)
-  const outline = new THREE.LineSegments(
-    edges,
-    new THREE.LineBasicMaterial({ color: 0xffffff }),
-  )
-  vine.scene.add(outline)
-}
-
-reset()
-resetBtn.addEventListener('click', reset)
