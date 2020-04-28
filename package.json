@@ -13,11 +13,14 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "11.0.2",
     "@rollup/plugin-node-resolve": "^7.0.0",
+    "@rollup/plugin-typescript": "^4.1.1",
     "rollup": "^1.20.0",
     "rollup-plugin-livereload": "^1.0.0",
     "rollup-plugin-svelte": "^5.0.3",
     "rollup-plugin-terser": "^5.1.2",
+    "sirv-cli": "^0.4.4",
     "svelte": "^3.0.0",
-    "sirv-cli": "^0.4.4"
+    "tslib": "^1.11.1",
+    "typescript": "^3.8.3"
   }
 }

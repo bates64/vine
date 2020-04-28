@@ -8,12 +8,7 @@
     "module": "esnext",
     "moduleResolution": "node",
     "baseUrl": ".",
-    "paths": {
-      "/web_modules/*.js": [
-          "node_modules/@types/*",
-          "node_modules/*",
-          "web_modules/*.js"
-      ]
-    },
-  }
+    "allowJs": true,
+  },
+  "include": ["src/**/*.ts"],
 }
