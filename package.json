@@ -2,22 +2,22 @@
   "name": "vine-console",
   "description": "Voxel-based 9-trit fantasy console with its own assembly language",
   "author": "Alex Bates (https://imalex.xyz)",
-  "license": "0BSD",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "start": "sirv public"
+  },
   "dependencies": {
     "three": "^0.111.0"
   },
   "devDependencies": {
-    "es-dev-server": "^1.38.2",
-    "prettier": "^1.19.1",
-    "snowpack": "^1.1.4",
-    "sucrase": "^3.12.1",
-    "watch": "^1.0.2"
-  },
-  "scripts": {
-    "postinstall": "snowpack",
-    "start": "es-dev-server --watch",
-    "build": "sucrase ./core -d ./dist --node-resolve --transforms typescript",
-    "watch": "watch \"npm run build\" core",
-    "pretty": "prettier --write **/*.{ts,js,html,md} --no-semi --trailing-comma all --single-quote"
+    "@rollup/plugin-commonjs": "11.0.2",
+    "@rollup/plugin-node-resolve": "^7.0.0",
+    "rollup": "^1.20.0",
+    "rollup-plugin-livereload": "^1.0.0",
+    "rollup-plugin-svelte": "^5.0.3",
+    "rollup-plugin-terser": "^5.1.2",
+    "svelte": "^3.0.0",
+    "sirv-cli": "^0.4.4"
   }
 }

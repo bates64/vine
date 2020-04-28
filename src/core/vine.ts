@@ -3,7 +3,7 @@ import ALU, { s2t, t2s, n2t, t2n, Tryte } from './vm/ALU.js'
 
 import assemble from './asm/assemble.js'
 
-import * as THREE from '/web_modules/three.js'
+import * as THREE from 'three'
 
 const symbols = {
   MOUSE_X: s2t('---------'),

@@ -1,4 +1,4 @@
-import * as THREE from '/web_modules/three.js'
+import * as THREE from 'three'
 
 // Voxel objects are three-dimensional objects with uniform width, height,
 // and depth.

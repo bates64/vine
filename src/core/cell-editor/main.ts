@@ -1,4 +1,4 @@
-import * as THREE from '/web_modules/three.js'
+import * as THREE from 'three'
 
 import Vobj from './Vobj.js'
 import Input from './Input.js'
