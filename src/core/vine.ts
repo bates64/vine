@@ -1,85 +1,123 @@
-import VirtualMachine from './vm/VirtualMachine.js'
-import ALU, { s2t, t2s, n2t, t2n, Tryte } from './vm/ALU.js'
-
-import assemble from './asm/assemble.js'
-
+import * as PIXI from 'pixi.js'
 import * as THREE from 'three'
+
+import Cartridge from './Cartridge'
+import Tile from './Tile'
+import assemble from './asm/assemble'
 
 export default class VineCanvas {
   stopped = true
 
-  canvas2D: HTMLCanvasElement
+  // 3D
   canvas3D: HTMLCanvasElement
-
-  ctx: CanvasRenderingContext2D
-
   scene: THREE.Scene
   renderer: THREE.WebGLRenderer
   camera: THREE.Camera
 
-  vm: VirtualMachine
-  clock: NodeJS.Timeout | undefined
+  // 2D
+  pixi: PIXI.Application
+  tiles: PIXI.TilingSprite[]
+  tileset: PIXI.Texture
+  tilesetCanvas: HTMLCanvasElement = document.createElement('canvas')
 
-  constructor(parent: HTMLElement, vm: VirtualMachine) {
+  vm: Worker
+  cartridge: Cartridge | null = null
+
+  constructor(vm: Worker, canvas2D: HTMLCanvasElement, canvas3D: HTMLCanvasElement) {
     this.vm = vm
 
-    this.canvas2D = document.createElement('canvas') as HTMLCanvasElement
-    this.canvas2D.width = 243
-    this.canvas2D.height = 243
-
-    this.canvas3D = document.createElement('canvas') as HTMLCanvasElement
-
-    this.ctx = this.canvas2D.getContext('2d') as CanvasRenderingContext2D
+    this.pixi = new PIXI.Application({
+      width: 243,
+      height: 243,
+      transparent: true,
+      view: canvas2D,
+    })
+    this.canvas3D = canvas3D
 
     this.scene = new THREE.Scene()
-    this.scene.background = new THREE.Color('grey')
 
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas3D,
+      alpha: true,
       antialias: false,
     })
-    this.renderer.setSize(243, 243)
+    this.renderer.setViewport(0, 0, 243, 243)
 
     this.camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1000)
 
-    this.canvas2D.style.position = this.canvas3D.style.position = 'absolute'
-    this.canvas2D.style.top = this.canvas3D.style.top = '0'
-    this.canvas2D.style.left = this.canvas3D.style.left = '0'
-    this.canvas2D.style.width = this.canvas3D.style.width = '720px'
-    this.canvas2D.style.height = this.canvas3D.style.height = '720px'
-    this.canvas2D.style.imageRendering = this.canvas3D.style.imageRendering =
-      'optimizespeed'
+    const TILES_ACROSS = 243 / 9
+    const TILES_DOWN = 243 / 9
 
-    parent.style.position = 'relative'
-    parent.style.width = '720px'
-    parent.style.height = '720px'
+    this.tileset = PIXI.Texture.from(this.tilesetCanvas)
+    this.tiles = new Array(TILES_DOWN)
+    for (let y = 0; y < TILES_DOWN; y++) {
+      for (let x = 0; x < TILES_ACROSS; x++) {
+        const tile = new PIXI.TilingSprite(this.tileset, 9, 9)
 
-    // 2D appears above 3D
-    parent.appendChild(this.canvas3D)
-    parent.appendChild(this.canvas2D)
+        tile.x = x * 9
+        tile.y = y * 9
+        tile.tilePosition.x = x * -9
+        tile.tilePosition.y = y * -9
 
-    this.canvas2D.addEventListener('mousemove', evt => {
-      const ndc = {
-        // (0, 0) is middle of canvas and (1, 1) is bottom right.
-        x: (evt.offsetX / 720) * 2 - 1,
-        y: (evt.offsetY / 720) * 2 - 1,
+        this.tiles.push(tile)
+        this.pixi.stage.addChild(tile)
       }
+    }
 
-      this.vm.setMousePos(Math.round(ndc.x * 121.5), Math.round(ndc.y * 121.5))
+    this.vm.addEventListener('message', e => {
+      const { method, ...args } = e.data
+
+      console.debug('worker response:', method, args)
+
+      if (method === 'respondChangedTiles') {
+        this.updateTiles(args.tiles)
+        this.renderer.render(this.scene, this.camera)
+
+        if (!this.stopped)
+          requestAnimationFrame(() => this.queueDraw())
+      }
     })
-
-    this.canvas2D.addEventListener('mousedown', evt => { this.vm.setMouseButton(evt.button, true) })
-    this.canvas2D.addEventListener('mouseup', evt => { this.vm.setMouseButton(evt.button, false) })
-
-    this.canvas2D.addEventListener('contextmenu', evt => evt.preventDefault())
+    this.queueDraw()
   }
 
-  draw() {
-    this.renderer.render(this.scene, this.camera)
-    this.drawTilemap()
+  async load(cartridge: Cartridge) {
+    this.cartridge = cartridge
+
+    const arrBuf = assemble(cartridge.sourceCode).block.buffer // Transferable
+    this.vm.postMessage({ method: 'runCartridge', buffer: arrBuf }, [ arrBuf ])
+
+    this.setTilesetImage(cartridge.tileset)
   }
 
-  drawTilemap() { // TODO
+  terminate() {
+    this.stopped = true
+  }
+
+  queueDraw() {
+    this.vm.postMessage({ method: 'requestChangedTiles' })
+  }
+
+  setTilesetImage(imageSrc: string) {
+    this.tilesetCanvas.width = 27 * 9
+    this.tilesetCanvas.height = 27 * 9
+
+    const ctx = this.tilesetCanvas.getContext('2d')
+    if (!ctx) throw new Error('Unable to get 2D context of tileset canvas')
+
+    const image = new Image()
+    image.onload = () => {
+      ctx.drawImage(image, 0, 0)
+      this.tileset.update()
+    }
+    image.src = imageSrc
+  }
+
+  updateTiles(tiles: Tile[]) {
+    for (const { index, u, v } of tiles) {
+      console.log(index, u, v)
+      this.tiles[index].tilePosition.x = u * -9
+      this.tiles[index].tilePosition.y = v * -9
+    }
     /*
     let tx = 0
     let ty = 0
@@ -127,38 +165,5 @@ export default class VineCanvas {
       }
     }
     */
-  }
-
-  start() {
-    if (!this.stopped) this.stop()
-    this.stopped = false
-
-    this.vm.start()
-
-    // Draw loop
-    let then = Date.now()
-    const fpsInterval = 1000 / 30
-    const drawLoop = () => {
-      const now = Date.now()
-      const elapsed = now - then
-
-      if (elapsed > fpsInterval && document.hasFocus()) {
-        then = now - (elapsed % fpsInterval)
-
-        this.draw()
-      }
-
-      if (!this.stopped) {
-        requestAnimationFrame(drawLoop)
-      }
-    }
-    drawLoop()
-
-    return true
-  }
-
-  stop() {
-    this.stopped = true
-    this.vm.stop()
   }
 }

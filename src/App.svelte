@@ -1,38 +1,49 @@
 <script>
 	import Vine from './core/Vine.svelte'
 
-	let vm
-	$: if (vm) {
-		vm.assembleAndLoad(`
-			; TODO: 'no cart loaded'
+	let vine
+	$: if (vine) {
+		vine.load({
+			name: 'Default Cart',
+			sourceCode: `
+				; TODO: 'no cart loaded'
 
-			; This example program implements a simple 'paint' program based
-			; on the current mouse position.
+				; This example program implements a simple 'paint' program based
+				; on the current mouse position.
 
-			MOV r0, oooo+oooo ; red
-			NOP
-			NOP
-			.loop
-			; x pos
-			LDA r1, --------- ; mouse x
-			ADD r1, 121
-			DIV r1, 9
+				MOV r0, oooo+oooo ; red
+				NOP
+				NOP
+				.loop
+				; x pos
+				LDA r1, --------- ; mouse x
+				ADD r1, 121
+				DIV r1, 9
 
-			; y pos
-			LDA r2, --------o ; mouse x
-			ADD r2, 121
-			DIV r2, 9
+				; y pos
+				LDA r2, --------o ; mouse x
+				ADD r2, 121
+				DIV r2, 9
 
-			; set cell
-			MUL r2, 54
-			ADD r1, r2
-			ADD r1, o---+---- ; start of tilemap
-			STA r0, r1
+				; set cell
+				MUL r2, 54
+				ADD r1, r2
+				ADD r1, o---+---- ; start of tilemap
+				STA r0, r1
 
-			JMP -------oo ; .loop
-		`)
-		vm.start()
+				JMP -------oo ; .loop
+			`,
+			tileset: 'splash-tileset.png',
+		})
 	}
 </script>
 
-<Vine bind:vm={vm} />
+<div>
+	<Vine bind:vine={vine} size={243 * 3} />
+</div>
+
+<style>
+	div {
+		padding: 2rem;
+	}
+</style>

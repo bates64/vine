@@ -1,8 +1,7 @@
-import * as comlink from 'comlink'
-
 import ALU, { Trit, Tryte, clone, s2t, t2s, n2t, t2n, PLUS_ONE } from './ALU.js'
 import { Instruction, shiftInstruction } from './Instruction.js'
 import Memory from './Memory.js'
+import Tile from '../Tile'
 
 import assemble from '../asm/assemble'
 
@@ -10,6 +9,8 @@ export const symbols = {
   MOUSE_X: s2t('---------'),
   MOUSE_Y: s2t('--------o'),
   MOUSE_BTN: s2t('--------+'),
+  TILEMAP: t2n(s2t('o---+----')),
+  TILEMAP_SIZE: 2916,
 }
 
 export enum Operation {
@@ -46,7 +47,9 @@ const A0 = 4,
 
 export default class VirtualMachine {
   alu = new ALU()
-  private ram: Memory | null = null
+  ram: Memory | null = null
+
+  unhandledTileChanges: Tile[] = []
 
   registers = [
     n2t(0), // t0
@@ -67,7 +70,7 @@ export default class VirtualMachine {
   private ialu = new ALU()
 
   // Program counter.
-  protected nextInstruction = s2t('---------')
+  nextInstruction = s2t('---------')
 
   private clock: number | undefined
 
@@ -189,6 +192,23 @@ export default class VirtualMachine {
         if (z) {
           this.ialu.add(z, y)
           this.ram.store(x, z)
+
+          // Write hooks - usually for the UI to update something
+          const address = t2n(z)
+          console.log(address)
+          if (address >= symbols.TILEMAP && address < (symbols.TILEMAP + symbols.TILEMAP_SIZE)) {
+            const u = s2t('---oooooo')
+            this.ialu.xor(u, x)
+
+            const v = s2t('ooo--oooo')
+            this.ialu.xor(v, x)
+
+            this.unhandledTileChanges.push({
+              index: address - symbols.TILEMAP,
+              u: t2n(u),
+              v: t2n(v),
+            })
+          }
         } else {
           console.warn('STO expects z operand')
         }
@@ -198,6 +218,10 @@ export default class VirtualMachine {
       case Operation.JMP: {
         this.nextInstruction = z || y
         break
+      }
+      default: {
+        console.error('Unknown intruction', instruction)
+        this.stop()
       }
     }
   }
@@ -248,10 +272,6 @@ export default class VirtualMachine {
     }
   }
 
-  assembleAndLoad(cartridge: string) {
-    this.ram = assemble(cartridge)
-  }
-
   setMousePos(x: number, y: number) {
     this.ram?.store(x, symbols.MOUSE_X)
     this.ram?.store(y, symbols.MOUSE_Y)
@@ -296,5 +316,3 @@ export default class VirtualMachine {
     this.ram.store(btn, symbols.MOUSE_BTN)
   }
 }
-
-comlink.expose(VirtualMachine)

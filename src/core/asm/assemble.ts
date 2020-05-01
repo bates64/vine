@@ -1,4 +1,4 @@
-import ALU, { Tryte, s2t, t2n, n2t, MIN_TRYTE } from '../vm/ALU.js'
+import ALU, { Tryte, s2t, t2n, n2t, t2s } from '../vm/ALU.js'
 import Memory from '../vm/Memory.js'
 import {
   Instruction,
@@ -60,14 +60,19 @@ export default function assemble(input: string): Memory {
 
       const data = assembleInstruction(instruction)
 
+      console.debug(`$${t2s(address)}: ${t2s(data[0])} ${line}`, instruction)
       cart.store(data[0], address)
       alu.add(address, n2t(1))
+
       if (data[1]) {
+        console.debug(`$${t2s(address)}: ${t2s(data[1])}`)
         cart.store(data[1], address)
         alu.add(address, n2t(1))
       }
+
     } else {
       // TODO
+      console.warn(line)
     }
   }
 
