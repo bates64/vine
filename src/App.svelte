@@ -1,8 +1,9 @@
 <script>
 	import Vine from './core/Vine.svelte'
 
-	let vine
-	$: if (vine) {
+	let vine, setup = false
+	$: if (vine && !setup) {
+		setup = true
 		vine.load({
 			name: 'Default Cart',
 			sourceCode: `
