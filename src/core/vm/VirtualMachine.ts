@@ -204,6 +204,11 @@ export default class VirtualMachine {
         this.nextInstruction = z || y
         break
       }
+      case Operation.JAL: {
+        this.registers[7] = this.nextInstruction
+        this.nextInstruction = z || y
+        break
+      }
       default: {
         console.error('Unknown intruction', instruction)
         this.stop()

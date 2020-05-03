@@ -3,10 +3,15 @@
 	import Debugger from './Debugger.svelte'
 
 	let vine, debug
-	let sourceCode = `mov r0, oo+oooooo
-sta r0, o---+----
-.spin
-jmp .spin
+	let sourceCode = `mov r0, 1
+
+.loop
+    jal .inc_r0
+    jmp .loop
+
+.inc_r0
+    add r0, 1
+    jmp ra
 `
 
 	async function run() {

@@ -246,6 +246,19 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
         'JMP: operand must be a register or immediate address',
       )
     }
+    case 'JAL': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(37),
+            x: n2t(0),
+          },
+          operands.shift(),
+          { allowLabel: true },
+        ),
+        'JAL: operand must be a register or immediate address',
+      )
+    }
     default:
       throw new Error(`unknown operation '${mnemonic}'`)
   }
