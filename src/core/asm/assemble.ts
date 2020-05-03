@@ -7,6 +7,11 @@ import {
   assembleInstruction,
 } from '../vm/Instruction.js'
 
+export interface DebugInfo {
+  labels: Map<string, Tryte>,
+  instructions: InstructionLabeled[],
+}
+
 type LabelMap = Map<string, number>
 
 // Unwraps a type unioned with null, throwing the given error if it is null.
@@ -22,7 +27,10 @@ function expect<T>(maybe: T | null | undefined, error: Error | string): T {
   }
 }
 
-export default function assemble(input: string): Memory {
+export default function assemble(input: string): {
+  mem: Memory,
+  debug: DebugInfo,
+} {
   const lines = input
     .split('\n')
     .map(line => line.replace(/;.*$/, '').trim()) // Remove comments & indentation whitespace
@@ -31,7 +39,7 @@ export default function assemble(input: string): Memory {
   const cart = new Memory()
   const alu = new ALU()
 
-  const labels: Map<string, Tryte> = new Map()
+  const labels = new Map()
 
   // First pass: determine label addresses
   {
@@ -63,6 +71,7 @@ export default function assemble(input: string): Memory {
   }
 
   // Second pass: assemble instructions
+  const instructions = []
   {
     const address = s2t('ooooooooo')
 
@@ -71,6 +80,8 @@ export default function assemble(input: string): Memory {
         // Instruction.
         const [mnemonic, ...operands] = parseInstructionParts(line)
         const instruction = parseInstruction(mnemonic, operands)
+
+        instructions[t2n(address)] = instruction
 
         const data = assembleInstruction(instruction, labels)
 
@@ -87,7 +98,7 @@ export default function assemble(input: string): Memory {
     }
   }
 
-  return cart
+  return { mem: cart, debug: { labels, instructions } }
 }
 
 function parseInstructionParts(line: string): string[] {

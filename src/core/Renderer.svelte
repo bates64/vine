@@ -55,8 +55,7 @@
 	div {
 		margin: 0 auto;
 
-		border: 1px solid #372538;
-		background: #17111a;
+		border: 1px dotted;
 
 		position: relative;
 		width: var(--size);

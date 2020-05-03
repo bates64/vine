@@ -72,7 +72,6 @@ export function assembleInstruction(
     realZ = z
   } else if (typeof z === 'string') {
     realZ = labels.get(z)
-    console.info(z, realZ)
   }
 
   return [

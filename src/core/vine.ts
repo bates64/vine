@@ -3,10 +3,11 @@ import * as THREE from 'three'
 
 import Cartridge from './Cartridge'
 import Tile from './Tile'
-import assemble from './asm/assemble'
+import assemble, { DebugInfo } from './asm/assemble'
 
 export default class VineCanvas {
   stopped = true
+  loaded = false
 
   // 3D
   canvas3D: HTMLCanvasElement
@@ -49,7 +50,7 @@ export default class VineCanvas {
     const TILES_DOWN = 243 / 9
 
     this.tileset = PIXI.Texture.from(this.tilesetCanvas)
-    this.tiles = new Array(TILES_DOWN)
+    this.tiles = []
     for (let y = 0; y < TILES_DOWN; y++) {
       for (let x = 0; x < TILES_ACROSS; x++) {
         const tile = new PIXI.TilingSprite(this.tileset, 9, 9)
@@ -77,19 +78,29 @@ export default class VineCanvas {
           requestAnimationFrame(() => this.queueDraw())
       }
     })
-    this.queueDraw()
   }
 
-  async load(cartridge: Cartridge) {
+  async load(cartridge: Cartridge): Promise<DebugInfo> {
     this.cartridge = cartridge
 
-    const arrBuf = assemble(cartridge.sourceCode).block.buffer // Transferable
+    const assembled = assemble(cartridge.sourceCode)
+
+    const arrBuf = assembled.mem.block.buffer // Transferable
     this.vm.postMessage({ method: 'runCartridge', buffer: arrBuf }, [ arrBuf ])
 
     this.setTilesetImage(cartridge.tileset)
+
+    this.loaded = true
+
+    return assembled.debug
   }
 
-  terminate() {
+  start() {
+    this.stopped == false
+    this.queueDraw()
+  }
+
+  stop() {
     this.stopped = true
   }
 

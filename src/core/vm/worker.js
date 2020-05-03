@@ -11,17 +11,17 @@ self.addEventListener('message', e => {
 
 	console.debug('worker recieved:', method, args)
 
-  if (method === 'runCartridge') {
-    vm.stop()
-    vm.ram = new Memory()
-    vm.ram.block = new Int32Array(args.buffer)
-    vm.nextInstruction = s2t('ooooooooo')
-  } else if (method === 'requestChangedTiles') {
-    const tiles = vm.unhandledTileChanges
-    vm.unhandledTileChanges = []
+	if (method === 'runCartridge') {
+		vm.stop()
+		vm.ram = new Memory()
+		vm.ram.block = new Int32Array(args.buffer)
+		vm.nextInstruction = s2t('ooooooooo')
+	} else if (method === 'requestChangedTiles') {
+		const tiles = vm.unhandledTileChanges
+		vm.unhandledTileChanges = []
 
-    self.postMessage({ method: 'respondChangedTiles', tiles })
-  } else if (method === 'setMousePos') {
+		self.postMessage({ method: 'respondChangedTiles', tiles })
+	} else if (method === 'setMousePos') {
 		vm.setMousePos(args.x, args.y)
 	} else if (method === 'setMouseButton') {
 		vm.setMouseButton(args.button, args.down)
@@ -33,7 +33,9 @@ self.addEventListener('message', e => {
 			registers: vm.registers,
 			nextInstruction: vm.nextInstruction,
 		})
+	} else if (method === 'start') {
+		vm.start()
 	} else {
-    console.error('unknown message posted to worker', method, args)
-  }
+		console.error('unknown message posted to worker', method, args)
+	}
 })

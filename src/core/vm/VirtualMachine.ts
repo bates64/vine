@@ -164,7 +164,6 @@ export default class VirtualMachine {
       }
 
       case Operation.MOV: {
-        console.log('mov', x, y, z)
         this.alu.copy(x, z || y)
         break
       }
@@ -178,6 +177,7 @@ export default class VirtualMachine {
       }
       case Operation.STA: {
         this.ram.store(x, z || y)
+        this.writeHooks(x, z || y)
         break
       }
       case Operation.LDO: {
@@ -193,23 +193,7 @@ export default class VirtualMachine {
         if (z) {
           this.ialu.add(z, y)
           this.ram.store(x, z)
-
-          // Write hooks - usually for the UI to update something
-          const address = t2n(z)
-          console.log(address)
-          if (address >= symbols.TILEMAP && address < (symbols.TILEMAP + symbols.TILEMAP_SIZE)) {
-            const u = s2t('---oooooo')
-            this.ialu.xor(u, x)
-
-            const v = s2t('ooo--oooo')
-            this.ialu.xor(v, x)
-
-            this.unhandledTileChanges.push({
-              index: address - symbols.TILEMAP,
-              u: t2n(u),
-              v: t2n(v),
-            })
-          }
+          this.writeHooks(x, z)
         } else {
           console.warn('STO expects z operand')
         }
@@ -255,6 +239,8 @@ export default class VirtualMachine {
     if (this.clock) this.stop()
     if (!this.ram) throw new Error('No cartridge loaded')
 
+    console.info('cpu started')
+
     // CPU loop
     const clockIntervalSecs = 0.01
     const clockMegahertz = 5
@@ -270,6 +256,26 @@ export default class VirtualMachine {
     if (this.clock) {
       clearInterval(this.clock)
       this.clock = undefined
+
+      console.info('cpu stopped')
+    }
+  }
+
+  // Write hooks - usually for the UI to update something
+  writeHooks(x: Tryte, z: Tryte) {
+    const address = t2n(z)
+    if (address >= symbols.TILEMAP && address < (symbols.TILEMAP + symbols.TILEMAP_SIZE)) {
+      const u = s2t('---oooooo')
+      this.ialu.xor(u, x)
+
+      const v = s2t('ooo--oooo')
+      this.ialu.xor(v, x)
+
+      this.unhandledTileChanges.push({
+        index: address - symbols.TILEMAP,
+        u: t2n(u),
+        v: t2n(v),
+      })
     }
   }
 

@@ -10,5 +10,21 @@ html, body {
 	margin: 0;
 	padding: 0;
 
-	background: #17111a;
+	color: white;
+	background: black;
+
+	font-family: monospace;
+}
+
+button {
+	font: inherit;
+	color: white;
+	border: 1px solid;
+	padding: .5em .8em;
+	background: black;
+	cursor: pointer;
+}
+
+button:hover {
+	text-decoration: underline;
 }
