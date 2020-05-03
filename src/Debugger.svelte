@@ -1,5 +1,5 @@
 <script>
-	import { t2s, t2n } from './core/vm/ALU'
+	import { t2s, t2n, n2t } from './core/vm/ALU'
 
 	export let vine
 	export let debug
@@ -16,6 +16,53 @@
 		}
 	})
 
+	function getLinesAroundAddress(centreAddress, radius) {
+		if (!debug) return null
+
+		const lines = []
+
+		// Lines before
+		let addr = centreAddress, triesLeft = radius * 2
+		while (lines.length < radius) {
+			addr--
+
+			const line = debug.instructions[addr]
+			if (line) {
+				lines.unshift({ line, address: t2s(n2t(addr)), isNext: false })
+			}
+
+			// Failsafe, e.g. we go past memory bounds
+			if (triesLeft-- <= 0) {
+				break
+			}
+		}
+
+		// The given line
+		lines.push({
+			line: debug.instructions[centreAddress],
+			address: t2s(n2t(centreAddress)),
+			isNext: true,
+		})
+
+		// Lines after
+		addr = centreAddress, triesLeft = radius * 2
+		while (lines.length < radius * 2 + 1) {
+			addr++
+
+			const line = debug.instructions[addr]
+			if (line) {
+				lines.push({ line, address: t2s(n2t(addr)), isNext: false })
+			}
+
+			// Failsafe, e.g. we go past memory bounds
+			if (triesLeft-- <= 0) {
+				break
+			}
+		}
+
+		return lines
+	}
+
 	function step() {
 		if (!awaitingResponse) {
 			awaitingResponse = true
@@ -30,15 +77,26 @@
 </script>
 
 {#if state}
-	{#if awaitingResponse}
-		<button>....</button>
-	{:else}
-		<button on:click={step}>Step</button>
-	{/if}
-	<button on:click={play}>Play and stop debugging</button>
-	<br> <br>
+	<div>
+		{#if awaitingResponse}
+			<button>....</button>
+		{:else}
+			<button on:click={step}>Step</button>
+		{/if}
+		<button class='dim' on:click={play}>Play and stop debugging</button>
+	</div>
 
-	Next instruction address: {t2s(state.nextInstruction)}<br> <br>
+	<p>
+		{#each getLinesAroundAddress(t2n(state.nextInstruction), 5) as { line, address, isNext }}
+			<span class='dim'>{address}</span>
+			{#if isNext}
+				{line}
+			{:else}
+				<span class='dim'>{line}</span>
+			{/if}
+			<br>
+		{/each}
+	</p>
 
 	r0 = {t2s(state.registers[0])} = {t2n(state.registers[0])}<br>
 	r1 = {t2s(state.registers[1])} = {t2n(state.registers[1])}<br>
@@ -56,5 +114,9 @@
 <style>
 	button {
 		font: inherit;
+	}
+
+	.dim {
+		color: #888;
 	}
 </style>

@@ -9,7 +9,7 @@ import {
 
 export interface DebugInfo {
   labels: Map<string, Tryte>,
-  instructions: InstructionLabeled[],
+  instructions: string[],
 }
 
 type LabelMap = Map<string, number>
@@ -81,7 +81,7 @@ export default function assemble(input: string): {
         const [mnemonic, ...operands] = parseInstructionParts(line)
         const instruction = parseInstruction(mnemonic, operands)
 
-        instructions[t2n(address)] = instruction
+        instructions[t2n(address)] = line
 
         const data = assembleInstruction(instruction, labels)
 
