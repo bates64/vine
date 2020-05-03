@@ -70,7 +70,7 @@ export default class VirtualMachine {
   private ialu = new ALU()
 
   // Program counter.
-  nextInstruction = s2t('---------')
+  nextInstruction = s2t('ooooooooo')
 
   private clock: number | undefined
 
@@ -164,6 +164,7 @@ export default class VirtualMachine {
       }
 
       case Operation.MOV: {
+        console.log('mov', x, y, z)
         this.alu.copy(x, z || y)
         break
       }

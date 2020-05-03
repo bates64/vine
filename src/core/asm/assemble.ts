@@ -1,7 +1,8 @@
-import ALU, { Tryte, s2t, t2n, n2t, t2s } from '../vm/ALU.js'
+import ALU, { Tryte, s2t, t2n, n2t, t2s, clone } from '../vm/ALU.js'
 import Memory from '../vm/Memory.js'
 import {
   Instruction,
+  InstructionLabeled,
   AddressingMode,
   assembleInstruction,
 } from '../vm/Instruction.js'
@@ -27,52 +28,62 @@ export default function assemble(input: string): Memory {
     .map(line => line.replace(/;.*$/, '').trim()) // Remove comments & indentation whitespace
     .filter(line => line.length > 0) // Ignore empty lines
 
-  //const labels: LabelMap = new Map
-  const instructions: Instruction[] = []
-
-  /*
-  // First pass: find label declarations
-  let pc = 0
-  for (const line of lines) {
-    if (line[0] == '.') {
-      // Label declaration.
-      labels.set(line.substr(1), pc)
-    } else {
-      // Instruction.
-      // TODO
-  }
-  */
-
   const cart = new Memory()
   const alu = new ALU()
 
-  const address = s2t('---------')
+  const labels: Map<string, Tryte> = new Map()
 
-  for (const line of lines) {
-    if (line[0] != '.') {
-      // Instruction.
-      const [mnemonic, ...operands] = parseInstructionParts(line)
-      const instruction = parseInstruction(mnemonic, operands)
+  // First pass: determine label addresses
+  {
+    const address = s2t('ooooooooo')
 
-      if (operands.length) {
-        throw new Error(`${mnemonic}: too many operands`)
-      }
+    for (const line of lines) {
+      if (line[0] != '.') {
+        // Instruction.
+        const [mnemonic, ...operands] = parseInstructionParts(line)
+        const instruction = parseInstruction(mnemonic, operands)
 
-      const data = assembleInstruction(instruction)
+        if (operands.length) {
+          throw new Error(`${mnemonic}: too many operands`)
+        }
 
-      console.debug(`$${t2s(address)}: ${t2s(data[0])} ${line}`, instruction)
-      cart.store(data[0], address)
-      alu.add(address, n2t(1))
-
-      if (data[1]) {
-        console.debug(`$${t2s(address)}: ${t2s(data[1])}`)
-        cart.store(data[1], address)
         alu.add(address, n2t(1))
-      }
+        if (instruction.z) alu.add(address, n2t(1))
+      } else {
+        // Label.
+        const labelName = line.substr(1)
 
-    } else {
-      // TODO
-      console.warn(line)
+        if (labels.has(labelName)) {
+          console.warn('label redeclared:', labelName)
+        }
+
+        labels.set(labelName, clone(address))
+      }
+    }
+  }
+
+  // Second pass: assemble instructions
+  {
+    const address = s2t('ooooooooo')
+
+    for (const line of lines) {
+      if (line[0] != '.') {
+        // Instruction.
+        const [mnemonic, ...operands] = parseInstructionParts(line)
+        const instruction = parseInstruction(mnemonic, operands)
+
+        const data = assembleInstruction(instruction, labels)
+
+        console.debug(`$${t2s(address)}: ${t2s(data[0])} ${line}`, instruction)
+        cart.store(data[0], address)
+        alu.add(address, n2t(1))
+
+        if (data[1]) {
+          console.debug(`$${t2s(address)}: ${t2s(data[1])}`)
+          cart.store(data[1], address)
+          alu.add(address, n2t(1))
+        }
+      }
     }
   }
 
@@ -107,7 +118,7 @@ function parseInstructionParts(line: string): string[] {
 }
 
 // Mutates `operands`.
-function parseInstruction(mnemonic: string, operands: string[]): Instruction {
+function parseInstruction(mnemonic: string, operands: string[]): InstructionLabeled {
   switch (mnemonic.toUpperCase()) {
     case 'NOP': {
       // MOV r4, r4
@@ -218,7 +229,7 @@ function parseInstruction(mnemonic: string, operands: string[]): Instruction {
         x: n2t(0),
         y: n2t(0),
         z: expect(
-          parseImmediateOperand(operands.shift()),
+          parseAddressOperand(operands.shift()),
           'JMP: operand must be an address',
         ),
       }

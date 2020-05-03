@@ -14,9 +14,8 @@ self.addEventListener('message', e => {
   if (method === 'runCartridge') {
     vm.stop()
     vm.ram = new Memory()
-    vm.ram.block.buffer = args.buffer
-    vm.nextInstruction = s2t('---------')
-    vm.start()
+    vm.ram.block = new Int32Array(args.buffer)
+    vm.nextInstruction = s2t('ooooooooo')
   } else if (method === 'requestChangedTiles') {
     const tiles = vm.unhandledTileChanges
     vm.unhandledTileChanges = []
@@ -26,6 +25,14 @@ self.addEventListener('message', e => {
 		vm.setMousePos(args.x, args.y)
 	} else if (method === 'setMouseButton') {
 		vm.setMouseButton(args.button, args.down)
+	} else if (method === 'stepAndRequestState') {
+		vm.stop()
+		vm.next()
+		self.postMessage({
+			method: 'respondState',
+			registers: vm.registers,
+			nextInstruction: vm.nextInstruction,
+		})
 	} else {
     console.error('unknown message posted to worker', method, args)
   }

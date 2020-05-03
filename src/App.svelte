@@ -1,39 +1,19 @@
 <script>
 	import Vine from './core/Vine.svelte'
+	import Debugger from './Debugger.svelte'
+
+	let sourceCode = `
+.loop
+ADD r0, +
+JMP .loop
+`
 
 	let vine, setup = false
 	$: if (vine && !setup) {
 		setup = true
 		vine.load({
 			name: 'Default Cart',
-			sourceCode: `
-				; TODO: 'no cart loaded'
-
-				; This example program implements a simple 'paint' program based
-				; on the current mouse position.
-
-				MOV r0, oooo+oooo ; red
-				NOP
-				NOP
-				.loop
-				; x pos
-				LDA r1, --------- ; mouse x
-				ADD r1, 121
-				DIV r1, 9
-
-				; y pos
-				LDA r2, --------o ; mouse x
-				ADD r2, 121
-				DIV r2, 9
-
-				; set cell
-				MUL r2, 54
-				ADD r1, r2
-				ADD r1, o---+---- ; start of tilemap
-				STA r0, r1
-
-				JMP -------oo ; .loop
-			`,
+			sourceCode,
 			tileset: 'splash-tileset.png',
 		})
 	}
@@ -41,10 +21,18 @@
 
 <div>
 	<Vine bind:vine={vine} size={243 * 3} />
+
+	{#if vine}
+		<Debugger vine={vine} />
+	{/if}
 </div>
+
+<textarea bind:value={sourceCode}></textarea>
 
 <style>
 	div {
+		display: flex;
+		flex-direction: row;
 		padding: 2rem;
 	}
 </style>

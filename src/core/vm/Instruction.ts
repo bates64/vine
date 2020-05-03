@@ -1,4 +1,4 @@
-import ALU, { Tryte, Trit, n2t, t2n } from '../vm/ALU.js'
+import ALU, { Tryte, Trit, n2t } from '../vm/ALU.js'
 
 export enum AddressingMode {
   REGISTER_REGISTER = -1,
@@ -34,6 +34,15 @@ interface WordImmediate {
   z: Tryte
 }
 
+interface WordImmediateLabeled {
+  opcode: Tryte // 4t
+  addressingMode: AddressingMode.WORD_IMMEDIATE
+  x: Register
+  y: Register
+  z: string
+}
+
+export type InstructionLabeled = RegisterRegister | ShortImmediate | WordImmediate | WordImmediateLabeled
 export type Instruction = RegisterRegister | ShortImmediate | WordImmediate
 
 // Shifts out the first instruction contained in the data.
@@ -53,9 +62,19 @@ export function shiftInstruction(data: { shift: () => Tryte }): Instruction {
 }
 
 export function assembleInstruction(
-  instruction: Instruction,
+  instruction: InstructionLabeled,
+  labels: Map<string, Tryte>,
 ): [Tryte, Tryte | undefined] {
   const { opcode, addressingMode, x, y, z } = instruction
+
+  let realZ
+  if (Array.isArray(z)) {
+    realZ = z
+  } else if (typeof z === 'string') {
+    realZ = labels.get(z)
+    console.info(z, realZ)
+  }
+
   return [
     [
       opcode[5],
@@ -68,6 +87,6 @@ export function assembleInstruction(
       y[7],
       y[8],
     ],
-    z || undefined,
+    realZ,
   ]
 }
