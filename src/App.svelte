@@ -14,19 +14,28 @@
     jmp ra
 `
 
+	let textarea, error = null
+
 	async function run() {
-		debug = await vine.load({
-			name: 'Default Cart',
-			sourceCode: sourceCode,
-			tileset: 'splash-tileset.png',
-		})
-		vine.vm.postMessage({ method: 'start' })
-		vine.start()
+		sourceCode = textarea.value
+		error = null
+
+		try {
+			debug = await vine.load({
+				name: 'Default Cart',
+				sourceCode,
+				tileset: 'splash-tileset.png',
+			})
+			vine.vm.postMessage({ method: 'start' })
+			vine.start()
+		} catch (err) {
+			error = err
+		}
 	}
 </script>
 
 <div class='app'>
-	<Renderer bind:vine={vine} bind:debug={debug} size={243 * 3} />
+	<Renderer bind:vine={vine} size={243 * 3} />
 
 	<aside>
 		{#if debug}
@@ -40,9 +49,13 @@
 		{:else}
 			<div>
 				<button on:click={run}>Assemble and run</button>
+
+				{#if error}
+					<span class='error'>{error}</span>
+				{/if}
 			</div>
 
-			<textarea bind:value={sourceCode} autocapitalize='off' autocomplete='off' spellcheck='false'></textarea>
+			<textarea value={sourceCode} autocapitalize='off' autocomplete='off' spellcheck='false' bind:this={textarea}></textarea>
 		{/if}
 	</aside>
 </div>
@@ -76,5 +89,9 @@
 
 	textarea:focus {
 		outline: 0;
+	}
+
+	.error {
+		color: #ff6e6e;
 	}
 </style>
