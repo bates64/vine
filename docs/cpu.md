@@ -174,6 +174,6 @@ register.
 |   34   | `JGE x, y, z` | Jumps to address `z` if `x >= y`.                                 |
 |   35   | `JLE x, y, z` | Jumps to address `z` if `x <= y`.                                 |
 |   36   | `JMP yz`      | Jumps to address `yz`.                                            |
-|   37   | `JAL yz`      | Jumps to address `yz`, setting `ra` to following instruction.     |
+|   37   | `JAL yz`      | Jumps to address `yz`, setting `ra` to the following instruction. |
 
 See also the [assembler pseudoinstructions](assembler.md#pseudoinstructions).

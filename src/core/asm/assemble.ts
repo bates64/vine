@@ -234,16 +234,17 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
       )
     }
     case 'JMP': {
-      return {
-        opcode: n2t(36),
-        addressingMode: AddressingMode.WORD_IMMEDIATE,
-        x: n2t(0),
-        y: n2t(0),
-        z: expect(
-          parseAddressOperand(operands.shift()),
-          'JMP: operand must be an address',
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(36),
+            x: n2t(0),
+          },
+          operands.shift(),
+          { allowLabel: true },
         ),
-      }
+        'JMP: operand must be a register or immediate address',
+      )
     }
     default:
       throw new Error(`unknown operation '${mnemonic}'`)
@@ -258,7 +259,8 @@ function isShort(value: Tryte): boolean {
 function unionParseYZ(
   partial: { opcode: Tryte; x: Tryte },
   operand: string | null | undefined,
-): Instruction | null {
+  options: { allowLabel: boolean } = { allowLabel: false },
+): InstructionLabeled | null {
   const asRegister = parseRegisterOperand(operand)
   if (asRegister) {
     return {
@@ -284,6 +286,18 @@ function unionParseYZ(
         addressingMode: AddressingMode.WORD_IMMEDIATE,
         y: n2t(0),
         z: asImmediate,
+      }
+    }
+  }
+
+  if (options.allowLabel) {
+    const asAddress = parseAddressOperand(operand)
+    if (asAddress) {
+      return {
+        ...partial,
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        y: n2t(0),
+        z: asAddress,
       }
     }
   }
