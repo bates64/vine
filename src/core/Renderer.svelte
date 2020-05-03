@@ -70,5 +70,7 @@
 		height: 100%;
 
 		image-rendering: crisp-edges;
+		image-rendering: optimisespeed;
+		image-rendering: pixelated;
 	}
 </style>
