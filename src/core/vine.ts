@@ -57,8 +57,8 @@ export default class VineCanvas {
 
         tile.x = x * 9
         tile.y = y * 9
-        tile.tilePosition.x = x * -9
-        tile.tilePosition.y = y * -9
+        tile.tilePosition.x = 0
+        tile.tilePosition.y = 0
 
         this.tiles.push(tile)
         this.pixi.stage.addChild(tile)
@@ -70,12 +70,11 @@ export default class VineCanvas {
 
       console.debug('worker response:', method, args)
 
-      if (method === 'respondChangedTiles') {
-        this.updateTiles(args.tiles)
-        this.renderer.render(this.scene, this.camera)
+      if (method === 'tileChange') {
+        const { index, u, v } = args
 
-        if (!this.stopped)
-          requestAnimationFrame(() => this.queueDraw())
+        this.tiles[index].tilePosition.x = u * -9
+        this.tiles[index].tilePosition.y = v * -9
       }
     })
   }
@@ -96,16 +95,11 @@ export default class VineCanvas {
   }
 
   start() {
-    this.stopped == false
-    this.queueDraw()
+    this.stopped = false
   }
 
   stop() {
     this.stopped = true
-  }
-
-  queueDraw() {
-    this.vm.postMessage({ method: 'requestChangedTiles' })
   }
 
   setTilesetImage(imageSrc: string) {
@@ -123,58 +117,10 @@ export default class VineCanvas {
     image.src = imageSrc
   }
 
-  updateTiles(tiles: Tile[]) {
-    for (const { index, u, v } of tiles) {
-      console.log(index, u, v)
-      this.tiles[index].tilePosition.x = u * -9
-      this.tiles[index].tilePosition.y = v * -9
+  clear() {
+    for (const tile of this.tiles) {
+      tile.tilePosition.x = 0
+      tile.tilePosition.y = 0
     }
-    /*
-    let tx = 0
-    let ty = 0
-    for (let addr = -3118; addr < -202; addr++) {
-      const x = tx * 9
-      const y = ty * 9
-
-      const [s0, s1, s2, s3, s4, p0, p1, flip, _unused] = this.vm.ram.load(addr)
-      const sprite = t2n([0, 0, 0, 0, s0, s1, s2, s3, s4])
-      const palette = t2n([0, 0, 0, 0, 0, 0, 0, p0, p1])
-
-      if (sprite == 0) {
-        const paletteAddress = t2n(s2t('ooo-+----')) + palette
-        const rgb = this.vm.ram.load(paletteAddress)
-
-        const red = t2n([0, 0, 0, 0, 0, 0, rgb[0], rgb[1], rgb[2]])
-        const green = t2n([0, 0, 0, 0, 0, 0, rgb[3], rgb[4], rgb[5]])
-        const blue = t2n([0, 0, 0, 0, 0, 0, rgb[6], rgb[7], rgb[8]])
-
-        if (red >= 0 && green >= 0 && blue >= 0) {
-          const redHex = Math.floor(255 * (red / 13))
-            .toString(16)
-            .padStart(2, '0')
-          const greenHex = Math.floor(255 * (green / 13))
-            .toString(16)
-            .padStart(2, '0')
-          const blueHex = Math.floor(255 * (blue / 13))
-            .toString(16)
-            .padStart(2, '0')
-
-          this.ctx.fillStyle = `#${redHex}${greenHex}${blueHex}`
-          this.ctx.fillRect(x, y, 9, 9)
-        } else {
-          // Transparent
-        }
-      } else if (sprite == 1) {
-        this.ctx.fillStyle = 'blue'
-        this.ctx.fillRect(x, y, 9, 9)
-      }
-
-      tx++
-      if (tx == 54) {
-        tx = 0
-        ty++
-      }
-    }
-    */
   }
 }

@@ -6,6 +6,7 @@ import {
   AddressingMode,
   assembleInstruction,
 } from '../vm/Instruction.js'
+import { symbols } from '../vm/VirtualMachine'
 
 export interface DebugInfo {
   labels: Map<string, Tryte>,
@@ -351,6 +352,8 @@ function parseRegisterOperand(
   }
 }
 
+const SYMBOL_REGEX = /^([^\[\(]+)(\[([+\-o0-9]+)\])?$/
+
 function parseImmediateOperand(
   operand: string | null | undefined,
 ): Tryte | null {
@@ -359,6 +362,27 @@ function parseImmediateOperand(
   }
 
   const trimmed = operand.trim()
+
+  if (trimmed[0] == '$') {
+    const match = trimmed.substr(1).toUpperCase().match(SYMBOL_REGEX)
+
+    if (!match) {
+      throw new Error(`Syntax error with symbol ${trimmed}`)
+    }
+
+    const [ , name, , offset ] = match
+    const symbol = symbols.get(name)
+
+    if (symbol && offset) {
+      const address = s2t(offset)
+      ;(new ALU()).add(address, symbol)
+      return address
+    } else if (symbol) {
+      return symbol
+    } else {
+      throw new Error(`Unknown symbol ${trimmed}`)
+    }
+  }
 
   try {
     return s2t(trimmed)

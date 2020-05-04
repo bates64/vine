@@ -16,11 +16,6 @@ self.addEventListener('message', e => {
 		vm.ram = new Memory()
 		vm.ram.block = new Int32Array(args.buffer)
 		vm.nextInstruction = s2t('ooooooooo')
-	} else if (method === 'requestChangedTiles') {
-		const tiles = vm.unhandledTileChanges
-		vm.unhandledTileChanges = []
-
-		self.postMessage({ method: 'respondChangedTiles', tiles })
 	} else if (method === 'setMousePos') {
 		vm.setMousePos(args.x, args.y)
 	} else if (method === 'setMouseButton') {

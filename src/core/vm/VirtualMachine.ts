@@ -5,13 +5,17 @@ import Tile from '../Tile'
 
 import assemble from '../asm/assemble'
 
-export const symbols = {
-  MOUSE_X: s2t('---------'),
-  MOUSE_Y: s2t('--------o'),
-  MOUSE_BTN: s2t('--------+'),
-  TILEMAP: t2n(s2t('o---+----')),
-  TILEMAP_SIZE: 2916,
-}
+export const symbols: Map<string, Tryte> = new Map([
+  [ 'MOUSE_X', s2t('---------') ],
+  [ 'MOUSE_Y', s2t('--------o') ],
+  [ 'MOUSE_BTN', s2t('--------+') ],
+
+  [ 'TILEMAP', s2t('o---+----') ],
+  [ 'TILEMAP_SIZE', n2t(2916) ],
+])
+
+const TILEMAP = t2n(<Tryte>symbols.get('TILEMAP'))
+const TILEMAP_SIZE = t2n(<Tryte>symbols.get('TILEMAP_SIZE'))
 
 export enum Operation {
   INT = -40, // TODO; interrupts are no longer planned
@@ -48,8 +52,6 @@ const A0 = 4,
 export default class VirtualMachine {
   alu = new ALU()
   ram: Memory | null = null
-
-  unhandledTileChanges: Tile[] = []
 
   registers = [
     n2t(0), // t0
@@ -269,15 +271,20 @@ export default class VirtualMachine {
   // Write hooks - usually for the UI to update something
   writeHooks(x: Tryte, z: Tryte) {
     const address = t2n(z)
-    if (address >= symbols.TILEMAP && address < (symbols.TILEMAP + symbols.TILEMAP_SIZE)) {
+
+    if (address >= TILEMAP && address < (TILEMAP + TILEMAP_SIZE)) {
       const u = s2t('---oooooo')
       this.ialu.xor(u, x)
+      this.ialu.shiftRight(u, n2t(6))
 
       const v = s2t('ooo--oooo')
       this.ialu.xor(v, x)
+      this.ialu.shiftRight(v, n2t(4))
 
-      this.unhandledTileChanges.push({
-        index: address - symbols.TILEMAP,
+      // @ts-ignore
+      self.postMessage({
+        method: 'tileChange',
+        index: address - TILEMAP,
         u: t2n(u),
         v: t2n(v),
       })
@@ -285,8 +292,8 @@ export default class VirtualMachine {
   }
 
   setMousePos(x: number, y: number) {
-    this.ram?.store(x, symbols.MOUSE_X)
-    this.ram?.store(y, symbols.MOUSE_Y)
+    this.ram?.store(x, <Tryte>symbols.get('MOUSE_X'))
+    this.ram?.store(y, <Tryte>symbols.get('MOUSE_Y'))
   }
 
   setMouseButton(button: number, down: boolean) {
@@ -304,8 +311,9 @@ export default class VirtualMachine {
     //
     // For each trybble, the value -1 means the button is not down, and a value of 1 means the
     // button is down. Other values are reserved for later use.
+    const MOUSE_BTN = <Tryte>symbols.get('MOUSE_BTN')
 
-    const btn = this.ram.load(symbols.MOUSE_BTN)
+    const btn = this.ram.load(MOUSE_BTN)
     const alu = new ALU()
 
     if (button === 0) {
@@ -325,6 +333,6 @@ export default class VirtualMachine {
       else alu.min(btn, s2t('++++++oo-'))
     }
 
-    this.ram.store(btn, symbols.MOUSE_BTN)
+    this.ram.store(btn, MOUSE_BTN)
   }
 }

@@ -3,15 +3,11 @@
 	import Debugger from './Debugger.svelte'
 
 	let vine, debug
-	let sourceCode = `mov r0, 1
+	let sourceCode = localStorage.sourceCode || `mov r0, oo+oooooo
+sta r0, $TILEMAP[1]
 
-.loop
-    jal .inc_r0
-    jmp .loop
-
-.inc_r0
-    add r0, 1
-    jmp ra
+.spin
+jmp .spin
 `
 
 	let textarea, error = null
@@ -26,11 +22,17 @@
 				sourceCode,
 				tileset: 'splash-tileset.png',
 			})
-			vine.vm.postMessage({ method: 'start' })
+			vine.clear()
 			vine.start()
+			vine.vm.postMessage({ method: 'start' })
 		} catch (err) {
 			error = err
 		}
+	}
+
+	function sourceCodeChange() {
+		sourceCode = textarea.value
+		localStorage.sourceCode = sourceCode
 	}
 </script>
 
@@ -55,7 +57,7 @@
 				{/if}
 			</div>
 
-			<textarea value={sourceCode} autocapitalize='off' autocomplete='off' spellcheck='false' bind:this={textarea}></textarea>
+			<textarea value={sourceCode} autocapitalize='off' autocomplete='off' spellcheck='false' bind:this={textarea} on:change={sourceCodeChange}></textarea>
 		{/if}
 	</aside>
 </div>
