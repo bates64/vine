@@ -204,6 +204,21 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
       )
     }
     // MOD
+    case 'LDA': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(1),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'LDA: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'LDA: operand 2 must be a register or address',
+      )
+    }
     case 'STA': {
       return expect(
         unionParseYZ(
@@ -219,20 +234,41 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
         'STA: operand 2 must be a register or address',
       )
     }
-    case 'LDA': {
-      return expect(
-        unionParseYZ(
-          {
-            opcode: n2t(1),
-            x: expect(
-              parseRegisterOperand(operands.shift()),
-              'LDA: operand 1 must be a register',
-            ),
-          },
-          operands.shift(),
+    case 'LDO': {
+      return {
+        opcode: n2t(3),
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        x: expect(
+          parseRegisterOperand(operands.shift()),
+          'LDO: operand 1 must be a register',
         ),
-        'LDA: operand 2 must be a register or address',
-      )
+        y: expect(
+          parseRegisterOperand(operands.shift()),
+          'LDO: operand 2 must be a register',
+        ),
+        z: expect(
+          parseAddressOperand(operands.shift()),
+          'LDO: operand 3 must be an address',
+        ),
+      }
+    }
+    case 'STO': {
+      return {
+        opcode: n2t(4),
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        x: expect(
+          parseRegisterOperand(operands.shift()),
+          'STO: operand 1 must be a register',
+        ),
+        y: expect(
+          parseRegisterOperand(operands.shift()),
+          'STO: operand 2 must be a register',
+        ),
+        z: expect(
+          parseAddressOperand(operands.shift()),
+          'STO: operand 3 must be an address',
+        ),
+      }
     }
     case 'JMP': {
       return expect(
@@ -424,11 +460,7 @@ function parseAddressOperand(
     return trimmed.substr(1)
   } else {
     // Raw address
-    try {
-      return s2t(trimmed)
-    } catch {
-      return null
-    }
+    return parseImmediateOperand(operand)
   }
 }
 
