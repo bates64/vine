@@ -172,7 +172,21 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
         'ADD: operand 2 must be a register or immediate',
       )
     }
-    // ADC
+    case 'ADC': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-38),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'ADC: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'ADC: operand 2 must be a register or immediate',
+      )
+    }
     case 'MUL': {
       return expect(
         unionParseYZ(
@@ -203,7 +217,114 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
         'DIV: operand 2 must be a register or immediate',
       )
     }
-    // MOD
+    case 'MOD': {
+      throw new Error('MOD is unimplemented')
+    }
+    case 'NEG': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-34),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'NEG: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'NEG: operand 2 must be a register or immediate',
+      )
+    }
+    case 'MIN': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-33),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'MIN: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'MIN: operand 2 must be a register or immediate',
+      )
+    }
+    case 'MAX': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-32),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'MAX: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'MAX: operand 2 must be a register or immediate',
+      )
+    }
+    case 'CON': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-31),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'CON: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'CON: operand 2 must be a register or immediate',
+      )
+    }
+    case 'ANY': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-30),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'ANY: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'ANY: operand 2 must be a register or immediate',
+      )
+    }
+    case 'SHR': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-30),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'SHR: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'SHR: operand 2 must be a register or immediate',
+      )
+    }
+    case 'SHU': {
+      return expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-30),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'SHU: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'SHU: operand 2 must be a register or immediate',
+      )
+    }
     case 'LDA': {
       return expect(
         unionParseYZ(
