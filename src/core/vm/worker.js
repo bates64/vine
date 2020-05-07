@@ -13,6 +13,7 @@ self.addEventListener('message', e => {
 
 	if (method === 'runCartridge') {
 		vm.stop()
+		vm.reset()
 		vm.ram = new Memory()
 		vm.ram.block = new Int32Array(args.buffer)
 		vm.nextInstruction = s2t('ooooooooo')

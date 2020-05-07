@@ -50,14 +50,16 @@ export default function assemble(input: string): {
       if (line[0] != '.') {
         // Instruction.
         const [mnemonic, ...operands] = parseInstructionParts(line)
-        const instruction = parseInstruction(mnemonic, operands)
+        const parsed = parseInstruction(mnemonic, operands)
 
         if (operands.length) {
           throw new Error(`${mnemonic}: too many operands`)
         }
 
-        alu.add(address, n2t(1))
-        if (instruction.z) alu.add(address, n2t(1))
+        for (const instruction of parsed) {
+          alu.add(address, n2t(1))
+          if (instruction.z) alu.add(address, n2t(1))
+        }
       } else {
         // Label.
         const labelName = line.substr(1)
@@ -80,20 +82,25 @@ export default function assemble(input: string): {
       if (line[0] != '.') {
         // Instruction.
         const [mnemonic, ...operands] = parseInstructionParts(line)
-        const instruction = parseInstruction(mnemonic, operands)
+        const parsed = parseInstruction(mnemonic, operands)
 
-        instructions[t2n(address)] = line
+        for (const instruction of parsed) {
+          // FIXME: pseudoinstructions which produce more than one
+          // instruction appear to be run twice when viewed in the
+          // debugger as we just show the source line twice
+          instructions[t2n(address)] = line
 
-        const data = assembleInstruction(instruction, labels)
+          const data = assembleInstruction(instruction, labels)
 
-        console.debug(`$${t2s(address)}: ${t2s(data[0])} ${line}`, instruction)
-        cart.store(data[0], address)
-        alu.add(address, n2t(1))
-
-        if (data[1]) {
-          console.debug(`$${t2s(address)}: ${t2s(data[1])}`)
-          cart.store(data[1], address)
+          console.log(`$${t2s(address)}: ${t2s(data[0])} ${line}`, instruction)
+          cart.store(data[0], address)
           alu.add(address, n2t(1))
+
+          if (data[1]) {
+            console.log(`$${t2s(address)}: ${t2s(data[1])}`)
+            cart.store(data[1], address)
+            alu.add(address, n2t(1))
+          }
         }
       }
     }
@@ -130,35 +137,77 @@ function parseInstructionParts(line: string): string[] {
 }
 
 // Mutates `operands`.
-function parseInstruction(mnemonic: string, operands: string[]): InstructionLabeled {
+function parseInstruction(mnemonic: string, operands: string[]): InstructionLabeled[] {
   switch (mnemonic.toUpperCase()) {
+    // Pseudoinstructions
     case 'NOP': {
       // MOV r4, r4
-      return {
+      return [{
         opcode: n2t(0),
         addressingMode: AddressingMode.REGISTER_REGISTER,
         x: n2t(0),
         y: n2t(0),
         z: null,
-      }
+      }]
     }
-    case 'MOV': {
-      return expect(
-        unionParseYZ(
+    case 'PSH': {
+      const instrs: InstructionLabeled[] = []
+      while (operands.length) {
+        instrs.push(
+          // STA rX, sp
           {
-            opcode: n2t(0),
+            opcode: n2t(2),
+            addressingMode: AddressingMode.REGISTER_REGISTER,
+            x: expect(
+              parseRegisterOperand(operands.pop()),
+              'PSH: all operands must be registers'
+            ),
+            y: n2t(4),
+            z: null,
+          },
+          // ADD sp, -1
+          {
+            opcode: n2t(-39),
+            addressingMode: AddressingMode.SHORT_IMMEDIATE,
+            x: n2t(4),
+            y: n2t(-1),
+            z: null,
+          },
+        )
+      }
+      return instrs
+    }
+    case 'POP': {
+      const instrs: InstructionLabeled[] = []
+      while (operands.length) {
+        instrs.push(
+          // ADD sp, 1
+          {
+            opcode: n2t(-39),
+            addressingMode: AddressingMode.SHORT_IMMEDIATE,
+            x: n2t(4),
+            y: n2t(1),
+            z: null,
+          },
+          // LDA rX, sp
+          {
+            opcode: n2t(1),
+            addressingMode: AddressingMode.REGISTER_REGISTER,
             x: expect(
               parseRegisterOperand(operands.shift()),
-              'MOV: operand 1 (destination) must be a register',
+              'POP: all operands must be registers'
             ),
+            y: n2t(4),
+            z: null,
           },
-          operands.shift(),
-        ),
-        'MOV: operand 2 (source) must be a register or immediate',
-      )
+        )
+      }
+      return instrs
     }
+
+    // Instructions
     case 'ADD': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(-39),
@@ -170,10 +219,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'ADD: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'ADC': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(-38),
@@ -185,10 +234,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'ADC: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'MUL': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(-37),
@@ -200,10 +249,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'MUL: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'DIV': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(-36),
@@ -215,13 +264,13 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'DIV: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'MOD': {
       throw new Error('MOD is unimplemented')
     }
     case 'NEG': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(-34),
@@ -233,10 +282,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'NEG: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'MIN': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(-33),
@@ -248,10 +297,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'MIN: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'MAX': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(-32),
@@ -263,13 +312,28 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'MAX: operand 2 must be a register or immediate',
-      )
+      )]
     }
-    case 'CON': {
-      return expect(
+    case 'XOR': {
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(-31),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'XOR: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'XOR: operand 2 must be a register or immediate',
+      )]
+    }
+    case 'CON': {
+      return [expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-30),
             x: expect(
               parseRegisterOperand(operands.shift()),
               'CON: operand 1 must be a register',
@@ -278,13 +342,13 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'CON: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'ANY': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
-            opcode: n2t(-30),
+            opcode: n2t(-29),
             x: expect(
               parseRegisterOperand(operands.shift()),
               'ANY: operand 1 must be a register',
@@ -293,13 +357,13 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'ANY: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'SHR': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
-            opcode: n2t(-30),
+            opcode: n2t(-28),
             x: expect(
               parseRegisterOperand(operands.shift()),
               'SHR: operand 1 must be a register',
@@ -308,13 +372,13 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'SHR: operand 2 must be a register or immediate',
-      )
+      )]
     }
     case 'SHU': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
-            opcode: n2t(-30),
+            opcode: n2t(-27),
             x: expect(
               parseRegisterOperand(operands.shift()),
               'SHU: operand 1 must be a register',
@@ -323,10 +387,26 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'SHU: operand 2 must be a register or immediate',
-      )
+      )]
+    }
+
+    case 'MOV': {
+      return [expect(
+        unionParseYZ(
+          {
+            opcode: n2t(0),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'MOV: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'MOV: operand 2 must be a register or immediate',
+      )]
     }
     case 'LDA': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(1),
@@ -338,10 +418,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'LDA: operand 2 must be a register or address',
-      )
+      )]
     }
     case 'STA': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(2),
@@ -353,10 +433,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           operands.shift(),
         ),
         'STA: operand 2 must be a register or address',
-      )
+      )]
     }
     case 'LDO': {
-      return {
+      return [{
         opcode: n2t(3),
         addressingMode: AddressingMode.WORD_IMMEDIATE,
         x: expect(
@@ -371,10 +451,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           parseAddressOperand(operands.shift()),
           'LDO: operand 3 must be an address',
         ),
-      }
+      }]
     }
     case 'STO': {
-      return {
+      return [{
         opcode: n2t(4),
         addressingMode: AddressingMode.WORD_IMMEDIATE,
         x: expect(
@@ -389,10 +469,118 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           parseAddressOperand(operands.shift()),
           'STO: operand 3 must be an address',
         ),
-      }
+      }]
+    }
+    case 'JEQ': {
+      return [{
+        opcode: n2t(30),
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        x: expect(
+          parseRegisterOperand(operands.shift()),
+          'JEQ: operand 1 must be a register',
+        ),
+        y: expect(
+          parseRegisterOperand(operands.shift()),
+          'JEQ: operand 2 must be a register',
+        ),
+        z: expect(
+          parseAddressOperand(operands.shift()),
+          'JEQ: operand 3 must be an address',
+        ),
+      }]
+    }
+    case 'JNE': {
+      return [{
+        opcode: n2t(31),
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        x: expect(
+          parseRegisterOperand(operands.shift()),
+          'JNE: operand 1 must be a register',
+        ),
+        y: expect(
+          parseRegisterOperand(operands.shift()),
+          'JNE: operand 2 must be a register',
+        ),
+        z: expect(
+          parseAddressOperand(operands.shift()),
+          'JNE: operand 3 must be an address',
+        ),
+      }]
+    }
+    case 'JGT': {
+      return [{
+        opcode: n2t(32),
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        x: expect(
+          parseRegisterOperand(operands.shift()),
+          'JGT: operand 1 must be a register',
+        ),
+        y: expect(
+          parseRegisterOperand(operands.shift()),
+          'JGT: operand 2 must be a register',
+        ),
+        z: expect(
+          parseAddressOperand(operands.shift()),
+          'JGT: operand 3 must be an address',
+        ),
+      }]
+    }
+    case 'JLT': {
+      return [{
+        opcode: n2t(33),
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        x: expect(
+          parseRegisterOperand(operands.shift()),
+          'JLT: operand 1 must be a register',
+        ),
+        y: expect(
+          parseRegisterOperand(operands.shift()),
+          'JLT: operand 2 must be a register',
+        ),
+        z: expect(
+          parseAddressOperand(operands.shift()),
+          'JLT: operand 3 must be an address',
+        ),
+      }]
+    }
+    case 'JGE': {
+      return [{
+        opcode: n2t(34),
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        x: expect(
+          parseRegisterOperand(operands.shift()),
+          'JGE: operand 1 must be a register',
+        ),
+        y: expect(
+          parseRegisterOperand(operands.shift()),
+          'JGE: operand 2 must be a register',
+        ),
+        z: expect(
+          parseAddressOperand(operands.shift()),
+          'JGE: operand 3 must be an address',
+        ),
+      }]
+    }
+    case 'JLE': {
+      return [{
+        opcode: n2t(35),
+        addressingMode: AddressingMode.WORD_IMMEDIATE,
+        x: expect(
+          parseRegisterOperand(operands.shift()),
+          'JLE: operand 1 must be a register',
+        ),
+        y: expect(
+          parseRegisterOperand(operands.shift()),
+          'JLE: operand 2 must be a register',
+        ),
+        z: expect(
+          parseAddressOperand(operands.shift()),
+          'JLE: operand 3 must be an address',
+        ),
+      }]
     }
     case 'JMP': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(36),
@@ -402,10 +590,10 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           { allowLabel: true },
         ),
         'JMP: operand must be a register or immediate address',
-      )
+      )]
     }
     case 'JAL': {
-      return expect(
+      return [expect(
         unionParseYZ(
           {
             opcode: n2t(37),
@@ -415,7 +603,7 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
           { allowLabel: true },
         ),
         'JAL: operand must be a register or immediate address',
-      )
+      )]
     }
     default:
       throw new Error(`unknown operation '${mnemonic}'`)
@@ -546,25 +734,6 @@ function parseImmediateOperand(
   } catch {
     return null
   }
-}
-
-// 'ImmReg' stands for 'immediate or register.' We need this tagged union as both registers and
-// immediates are typically stored as trytes, but we need to discriminate between them.
-type ImmReg =
-  | { type: 'immediate'; data: Tryte }
-  | { type: 'register'; data: Tryte }
-function parseImmRegOperand(operand: string | null | undefined): ImmReg | null {
-  const immediate = parseImmediateOperand(operand)
-  if (immediate) {
-    return { type: 'immediate', data: immediate }
-  }
-
-  const register = parseRegisterOperand(operand)
-  if (register) {
-    return { type: 'register', data: register }
-  }
-
-  return null
 }
 
 function parseAddressOperand(

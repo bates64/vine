@@ -162,8 +162,8 @@ register.
 |  -27   | `SHU x, yz`   | Arithmetic shift x up yz times. Use negative yz to shift down.    |
 |        |               |                                                                   |
 |   0    | `MOV x, yz`   | Copies `yz` into `x`.                                             |
-|   1    | `LDA x, yz`   | Loads the tryte at address `z` into `x`.                          |
-|   2    | `STA x, yz`   | Stores `x` at address `z`.                                        |
+|   1    | `LDA x, yz`   | Loads the tryte at address `yz` into `x`.                          |
+|   2    | `STA x, yz`   | Stores `x` at address `yz`.                                        |
 |   3    | `LDO x, y, z` | Loads the tryte at address `y + z` into `x`.                      |
 |   4    | `STO x, y, z` | Stores `x` at address `y + z`.                                    |
 |        |               |                                                                   |
