@@ -16,7 +16,7 @@ html, body {
 	font-family: monospace;
 }
 
-button {
+button, select {
 	font: inherit;
 	color: white;
 	border: 1px solid;

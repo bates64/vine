@@ -1,42 +1,32 @@
 <script>
 	import Renderer from './core/Renderer.svelte'
 	import Debugger from './Debugger.svelte'
+	import { examples } from './core/Cartridge'
 
 	let vine, debug
-	let sourceCode = localStorage.sourceCode || `.loop
-  mov r3, oo+oooooo ; red tile
-  jal .get_mouse_tile_pos
-  sto r3, r2, $TILEMAP
-  jmp .loop
+	let cartridge
+	let exampleIndex = 0
 
-.get_mouse_tile_pos ; returns (r0 = x, r1 = y, r2 = index)
-  ; x (r0)
-  lda r0, $MOUSE_X
-  add r0, 121      ; adjust so origin is 0,0 rather than centre
-  div r0, 9        ; to grid
-  ; y (r1)
-  lda r1, $MOUSE_Y
-  add r1, 121      ; adjust origin
-  div r1, 9        ; to grid
-  ; index (r2)
-  mov r2, r1
-  mul r2, 27       ; row size
-  add r2, r0
-  jmp ra
-`
+	$: if (exampleIndex > -1) {
+		cartridge = examples[exampleIndex]
+	}
+
+	if (localStorage.cartridge) {
+		try {
+			exampleIndex = -1
+			cartridge = JSON.parse(localStorage.cartridge)
+		} catch {
+			exampleIndex = 0
+		}
+	}
 
 	let textarea, error = null
 
 	async function run() {
-		sourceCode = textarea.value
 		error = null
 
 		try {
-			debug = await vine.load({
-				name: 'Default Cart',
-				sourceCode,
-				tileset: 'splash-tileset.png',
-			})
+			debug = await vine.load(cartridge)
 			vine.clear()
 			vine.start()
 			vine.vm.postMessage({ method: 'start' })
@@ -46,8 +36,12 @@
 	}
 
 	function sourceCodeChange() {
-		sourceCode = textarea.value
-		localStorage.sourceCode = sourceCode
+		cartridge = { ...cartridge, sourceCode: textarea.value }
+		exampleIndex = -1
+	}
+
+	window.onbeforeunload = () => {
+		localStorage.cartridge = JSON.stringify(cartridge)
 	}
 </script>
 
@@ -67,12 +61,30 @@
 			<div>
 				<button on:click={run}>Assemble and run</button>
 
+				<select bind:value={exampleIndex}>
+					{#if exampleIndex === -1}
+						<option value={-1}>Custom</option>
+					{/if}
+					{#each examples as example, i}
+						<option value={i}>Example: {example.name}</option>
+					{/each}
+				</select>
+
 				{#if error}
 					<span class='error'>{error}</span>
 				{/if}
 			</div>
 
-			<textarea value={sourceCode} autocapitalize='off' autocomplete='off' spellcheck='false' bind:this={textarea} on:change={sourceCodeChange}></textarea>
+			<textarea
+				bind:this={textarea}
+
+				value={cartridge.sourceCode}
+				on:change={sourceCodeChange}
+
+				autocapitalize='off'
+				autocomplete='off'
+				spellcheck='false'
+			></textarea>
 		{/if}
 	</aside>
 </div>

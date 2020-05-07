@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "events": "^3.1.0",
+    "fix-whitespace": "^1.0.3",
     "pixi.js": "^5.2.3",
     "three": "^0.111.0"
   },
