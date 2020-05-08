@@ -1,5 +1,9 @@
 {
   "routes": [
-    { "src": "/docs/(.*)", "dest": "https://imalex.xyz/vine/$1" }
+    {
+      "src": "/docs/(.*)",
+      "dest": "https://imalex.xyz/vine/$1",
+      "status": 301
+    }
   ]
 }
