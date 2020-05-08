@@ -6,6 +6,6 @@ charset = utf-8
 
 indent_style = tab
 
-[*.{ts,json}]
+[*.{ts,json,md}]
 indent_style = space
 indent_size = 2

@@ -41,8 +41,8 @@ $player_position[2]
 
 .get_player_pos
   LDA r0, $player_position[0]   ; x
-	LDA r1, $player_position[1]   ; y
-	JMP ra
+  LDA r1, $player_position[1]   ; y
+  JMP ra
 ```
 
 [Memory-mapped symbols](memory.md) are made available with this syntax also.
