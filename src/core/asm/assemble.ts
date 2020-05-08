@@ -205,12 +205,12 @@ function parseInstruction(mnemonic: string, operands: string[]): UnresolvedInstr
             y: n2t(4),
             z: null,
           },
-          // ADD sp, -1
+          // ADD sp, 1
           {
             opcode: n2t(-39),
             addressingMode: AddressingMode.SHORT_IMMEDIATE,
             x: n2t(4),
-            y: n2t(-1),
+            y: n2t(1),
             z: null,
           },
         )
@@ -221,12 +221,12 @@ function parseInstruction(mnemonic: string, operands: string[]): UnresolvedInstr
       const instrs: UnresolvedInstruction[] = []
       while (operands.length) {
         instrs.push(
-          // ADD sp, 1
+          // ADD sp, -1
           {
             opcode: n2t(-39),
             addressingMode: AddressingMode.SHORT_IMMEDIATE,
             x: n2t(4),
-            y: n2t(1),
+            y: n2t(-1),
             z: null,
           },
           // LDA rX, sp
@@ -672,7 +672,7 @@ function isShort(value: Tryte): boolean {
 function unionParseYZ(
   partial: { opcode: Tryte; x: Tryte },
   operand: string | null | undefined,
-  options: { allowAddress: boolean } = { allowAddress: false },
+  options: { allowAddress: boolean } = { allowAddress: true },
 ): UnresolvedInstruction | null {
   const asRegister = parseRegisterOperand(operand)
   if (asRegister) {

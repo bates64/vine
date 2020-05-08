@@ -59,7 +59,7 @@ export const examples: Cartridge[] = [
       ;;                                             ;;
       ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-      mov sp, -1 ; stack grows backwards with psh/pop
+      mov sp, $stack
 
       mov r0, +o-oooooo ; grey tile
       sta r0, $lmb_color
@@ -75,6 +75,7 @@ export const examples: Cartridge[] = [
 
         jmp .main_loop
 
+      $stack[10]
       $lmb_color
       $rmb_color
 
