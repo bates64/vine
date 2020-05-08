@@ -3,6 +3,8 @@
 The CPU will begin execution at address `0`. There is no special 'main' label - the first thing
 you write will be the first thing executed.
 
+Instructions and registers are case-insensitive.
+
 ### Numeric literals
 
 Both decimal and ternary are supported with no prefix.

@@ -18,7 +18,7 @@ export const examples: Cartridge[] = [
       ; You can also see the assembled object code by opening
       ; the JavaScript console (Ctrl+Shift+J).
       ;
-      ; Documentation: https://github.com/nanaian/vine/tree/master/docs
+      ; Documentation: https://vine.imalex.xyz/docs/
       ;
       ; You're free to edit the code - your changes will be saved
       ; in the URL of your browser window. Bookmark the page if

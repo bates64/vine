@@ -28,11 +28,24 @@ button:hover {
 	text-decoration: underline;
 }
 
+#logotype {
+	position: absolute;
+
+	top: 16px;
+	left: 16px;
+
+	width: 74px;
+	height: 29px;
+
+	image-rendering: pixelated;
+	image-rendering: optimiseSpeed;
+}
+
 #github-btn {
 	position: absolute;
 
-	top: 8px;
-	right: 8px;
+	top: 16px;
+	right: 16px;
 
 	width: 32px;
 	height: 32px;

@@ -43,7 +43,7 @@ ADD sp, -
 LDA r0, sp
 ```
 
-The above patterns are common that [the assembler](assembler.md) provides PSH and POP
+The above patterns are so common that [the assembler](assembler.md) provides PSH and POP
 pseudoinstructions which expand to them:
 
 ```

@@ -1,0 +1,5 @@
+{
+  "routes": [
+    { "src": "/docs/(.*)", "dest": "https://imalex.xyz/vine/$1" }
+  ]
+}
