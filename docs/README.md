@@ -6,7 +6,7 @@ VINE is an in-browser ternary fantasy console where you write actual assembly la
 
 #### documentation
 
-- [Ternary](memory.md)
+- [Ternary](ternary.md)
 - [CPU & instruction set](cpu.md)
 - [Assembler](assembler.md)
 - [Memory map](memory.md)
@@ -17,7 +17,7 @@ VINE is roughly based on the 4th generation of consoles:
 
 - 9-trit word size
 - 243x243 display
-- [9k work ram](memory)
+- [9k work ram](memory.md)
 
 #### who is it for?
 
