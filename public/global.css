@@ -27,3 +27,21 @@ button, select {
 button:hover {
 	text-decoration: underline;
 }
+
+#github-btn {
+	position: absolute;
+
+	top: 8px;
+	right: 8px;
+
+	width: 32px;
+	height: 32px;
+
+	image-rendering: pixelated;
+	image-rendering: optimiseSpeed;
+	filter: brightness(100%);
+}
+
+#github-btn:hover {
+	filter: brightness(150%);
+}
