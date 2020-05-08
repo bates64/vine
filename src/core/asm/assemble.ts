@@ -1,4 +1,4 @@
-import ALU, { Tryte, s2t, t2n, n2t, t2s, clone } from '../vm/ALU.js'
+import ALU, { MAX_TRYTE, Tryte, s2t, t2n, n2t, t2s, clone } from '../vm/ALU.js'
 import Memory from '../vm/Memory.js'
 import {
   UnresolvedInstruction,
@@ -6,6 +6,8 @@ import {
   assembleInstruction,
 } from '../vm/Instruction.js'
 import { symbols } from '../vm/VirtualMachine'
+
+const ZERO = n2t(0)
 
 const globalSymbols = new Map(
   // Convert Map<string, Tryte> to Map<string, { address: Tryte }>
@@ -116,6 +118,10 @@ export default function assemble(input: string): {
 
           isFirst = false
         }
+      }
+
+      if (alu.compare(address, MAX_TRYTE) !== -1 || alu.compare(address, ZERO) === -1) {
+        throw new Error('Out of cartridge space!')
       }
     }
   }
