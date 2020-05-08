@@ -2,7 +2,6 @@ import * as PIXI from 'pixi.js'
 import * as THREE from 'three'
 
 import Cartridge from './Cartridge'
-import Tile from './Tile'
 import assemble, { DebugInfo } from './asm/assemble'
 
 export default class VineCanvas {
@@ -57,8 +56,8 @@ export default class VineCanvas {
 
         tile.x = x * 9
         tile.y = y * 9
-        tile.tilePosition.x = 0
-        tile.tilePosition.y = 0
+        tile.tilePosition.x = 0 // ---
+        tile.tilePosition.y = 0 //    --
 
         this.tiles.push(tile)
         this.pixi.stage.addChild(tile)
@@ -68,13 +67,11 @@ export default class VineCanvas {
     this.vm.addEventListener('message', e => {
       const { method, ...args } = e.data
 
-      console.debug('worker response:', method, args)
-
       if (method === 'tileChange') {
         const { index, u, v } = args
 
-        this.tiles[index].tilePosition.x = u * -9
-        this.tiles[index].tilePosition.y = v * -9
+        this.tiles[index].tilePosition.x = (u + 13) * -9
+        this.tiles[index].tilePosition.y = (v + 4) * -9
       }
     })
   }

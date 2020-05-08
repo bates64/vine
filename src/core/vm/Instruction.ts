@@ -34,7 +34,7 @@ interface WordImmediate {
   z: Tryte
 }
 
-interface WordImmediateLabeled {
+interface UnresolvedWordImmediate {
   opcode: Tryte // 4t
   addressingMode: AddressingMode.WORD_IMMEDIATE
   x: Register
@@ -42,7 +42,7 @@ interface WordImmediateLabeled {
   z: string
 }
 
-export type InstructionLabeled = RegisterRegister | ShortImmediate | WordImmediate | WordImmediateLabeled
+export type UnresolvedInstruction = RegisterRegister | ShortImmediate | WordImmediate | UnresolvedWordImmediate
 export type Instruction = RegisterRegister | ShortImmediate | WordImmediate
 
 // Shifts out the first instruction contained in the data.
@@ -62,8 +62,8 @@ export function shiftInstruction(data: { shift: () => Tryte }): Instruction {
 }
 
 export function assembleInstruction(
-  instruction: InstructionLabeled,
-  labels: Map<string, Tryte>,
+  instruction: UnresolvedInstruction,
+  symbols: Map<string, { address: Tryte }>,
 ): [Tryte, Tryte | undefined] {
   const { opcode, addressingMode, x, y, z } = instruction
 
@@ -71,7 +71,12 @@ export function assembleInstruction(
   if (Array.isArray(z)) {
     realZ = z
   } else if (typeof z === 'string') {
-    realZ = labels.get(z)
+    realZ = symbols.get(z)
+    if (realZ) {
+      realZ = realZ.address
+    } else {
+      throw new Error(`Unknown symbol ${z}`)
+    }
   }
 
   return [

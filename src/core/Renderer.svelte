@@ -4,7 +4,7 @@
 	import VineCanvas from './vine.ts'
 	import VmWorker from 'web-worker:./vm/worker.js'
 
-	export let size = 243
+	export let size
 	export let vine = null
 
 	let vm, canvas2d, canvas3d
@@ -29,11 +29,13 @@
 			y: (evt.offsetY / size) * 2 - 1,
 		}
 
-		if (vm) vm.postMessage({
-			method: 'setMousePos',
-			x: Math.round(ndc.x * 121.5),
-			y: Math.round(ndc.y * 121.5),
-		})
+		if (Math.abs(ndc.x) < 1 && Math.abs(ndc.y) < 1 && vm) {
+			 vm.postMessage({
+				method: 'setMousePos',
+				x: Math.round(ndc.x * 121.5),
+				y: Math.round(ndc.y * 121.5),
+			})
+		}
 	}}
 	on:mousedown={evt => vm && vm.postMessage({
 		method: 'setMouseButton',
@@ -55,7 +57,7 @@
 	div {
 		margin: 0 auto;
 
-		border: 1px dotted;
+		border: .2em solid #3e375c;
 
 		position: relative;
 		width: var(--size);

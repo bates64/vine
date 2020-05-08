@@ -5,6 +5,8 @@ import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 import workerLoader from 'rollup-plugin-web-worker-loader'
+import strip from '@rollup/plugin-strip'
+import { dependencies } from './package.json'
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -12,8 +14,7 @@ export default {
 	input: 'src/main.js',
 	output: {
 		sourcemap: true,
-		format: 'iife',
-		name: 'app',
+		format: 'esm',
 		file: 'public/build/bundle.js'
 	},
 	plugins: [
@@ -31,27 +32,23 @@ export default {
 			}
 		}),
 
-		// If you have external dependencies installed from
-		// npm, you'll most likely need these plugins. In
-		// some cases you'll need additional configuration -
-		// consult the documentation for details:
-		// https://github.com/rollup/plugins/tree/master/packages/commonjs
+		cdn(new Set(['pixi.js', 'three'])),
 		resolve({
 			browser: true,
-			dedupe: ['svelte']
+			jsnext: true,
+			dedupe: ['svelte'],
 		}),
-		commonjs(),
+		commonjs({
+			exclude: 'node_modules/@pixi/**/*.*',
+		}),
 
-		// In dev mode, call `npm run start` once
-		// the bundle has been generated
+		production && strip({
+			functions: ['console.debug'],
+		}),
+
 		!production && serve(),
-
-		// Watch the `public` directory and refresh the
-		// browser on changes when not in production
 		!production && livereload('public'),
 
-		// If we're building for production (npm run build
-		// instead of npm run dev), minify
 		production && terser()
 	],
 	watch: {
@@ -74,4 +71,30 @@ function serve() {
 			}
 		}
 	};
+}
+
+function cdn(whitelist) {
+	return {
+		resolveId(id, _importer) {
+			if (!whitelist.has(id)) {
+				return
+			}
+
+			let [packageName, ...components] = id.split('/')
+
+			if (packageName.startsWith('@')) {
+				packageName += `/${components.shift()}`
+			}
+
+			const version = dependencies[packageName]
+			if (version) {
+				return {
+					id: components.length === 0 ?
+						`https://cdn.pika.dev/${packageName}@${version}` :
+						`https://cdn.pika.dev/${packageName}@${version}/${components.join('/')}`,
+					external: true,
+				}
+			}
+		},
+	}
 }

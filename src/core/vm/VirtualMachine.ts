@@ -1,4 +1,4 @@
-import ALU, { Tryte, s2t, n2t, t2n, PLUS_ONE } from './ALU.js'
+import ALU, { Tryte, s2t, n2t, t2n, t2s, PLUS_ONE } from './ALU.js'
 import { Instruction, AddressingMode, shiftInstruction } from './Instruction.js'
 import Memory from './Memory.js'
 
@@ -104,6 +104,11 @@ export default class VirtualMachine {
     }
     */
 
+    if (t2n(this.nextInstruction) < 0) {
+      console.error(`Illegal attempt to execute instruction at internal negative memory address ${t2s(this.nextInstruction)}`)
+      this.stop()
+    }
+
     // Fetch and decode the next instruction.
     const instruction = shiftInstruction(this)
 
@@ -142,7 +147,8 @@ export default class VirtualMachine {
         break
       }
       case Operation.MOD: {
-        throw new Error('Unimplemented')
+        this.alu.modulo(x, z || y)
+        break
       }
       case Operation.NEG: {
         this.alu.neg(x, z || y)

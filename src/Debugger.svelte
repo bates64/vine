@@ -17,7 +17,8 @@
 	})
 
 	function getLinesAroundAddress(centreAddress, radius) {
-		if (!debug) return null
+		if (!debug) return []
+		if (!debug.instructions.has(centreAddress)) return []
 
 		const lines = []
 
@@ -26,8 +27,8 @@
 		while (lines.length < radius) {
 			addr--
 
-			const line = debug.instructions[addr]
-			if (line) {
+			if (debug.instructions.has(addr)) {
+				const { line, address } = debug.instructions.get(addr)
 				lines.unshift({ line, address: t2s(n2t(addr)), isNext: false })
 			}
 
@@ -39,7 +40,7 @@
 
 		// The given line
 		lines.push({
-			line: debug.instructions[centreAddress],
+			line: debug.instructions.get(centreAddress).line,
 			address: t2s(n2t(centreAddress)),
 			isNext: true,
 		})
@@ -49,9 +50,9 @@
 		while (lines.length < radius * 2 + 1) {
 			addr++
 
-			const line = debug.instructions[addr]
-			if (line) {
-				lines.push({ line, address: t2s(n2t(addr)), isNext: false })
+			if (debug.instructions.has(addr)) {
+				const { line, address } = debug.instructions.get(addr)
+				lines.push({ line, address: t2s(address), isNext: false })
 			}
 
 			// Failsafe, e.g. we go past memory bounds
@@ -83,7 +84,8 @@
 		{:else}
 			<button on:click={step}>Step</button>
 		{/if}
-		<button class='dim' on:click={play}>Play and stop debugging</button>
+		<button on:click={play}>Play</button>
+		<slot/>
 	</div>
 
 	<p>
@@ -108,7 +110,10 @@
 	ra = {t2s(state.registers[7])} = {t2n(state.registers[7])}<br>
 	sp = {t2s(state.registers[8])} = {t2n(state.registers[8])}<br>
 {:else}
-	<button on:click={step}>Pause and debug</button>
+	<div>
+		<button on:click={step}>Pause and debug</button>
+		<slot/>
+	</div>
 {/if}
 
 <style>

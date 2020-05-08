@@ -1,19 +1,23 @@
 import ALU, { Tryte, s2t, t2n, n2t, t2s, clone } from '../vm/ALU.js'
 import Memory from '../vm/Memory.js'
 import {
-  Instruction,
-  InstructionLabeled,
+  UnresolvedInstruction,
   AddressingMode,
   assembleInstruction,
 } from '../vm/Instruction.js'
 import { symbols } from '../vm/VirtualMachine'
 
-export interface DebugInfo {
-  labels: Map<string, Tryte>,
-  instructions: string[],
-}
+const globalSymbols = new Map(
+  // Convert Map<string, Tryte> to Map<string, { address: Tryte }>
+  Array.from(symbols.entries())
+  .map(([ k, v ]) => [ `$${k}`, { address: v } ])
+)
 
-type LabelMap = Map<string, number>
+export interface DebugInfo {
+  labels: Map<string, { address: Tryte }>,
+  datas: Map<string, { address: Tryte, size: Tryte }>,
+  instructions: Map<number, { address: Tryte, instruction: UnresolvedInstruction, line: string }>,
+}
 
 // Unwraps a type unioned with null, throwing the given error if it is null.
 function expect<T>(maybe: T | null | undefined, error: Error | string): T {
@@ -40,15 +44,58 @@ export default function assemble(input: string): {
   const cart = new Memory()
   const alu = new ALU()
 
+  // First pass: parse & determine addresses
   const labels = new Map()
-
-  // First pass: determine label addresses
+  const datas = new Map()
+  const instructions = new Map()
   {
     const address = s2t('ooooooooo')
 
     for (const line of lines) {
-      if (line[0] != '.') {
-        // Instruction.
+      if (line[0] == '.') {
+        // .label
+
+        const matches = line.match(/^(\.[a-zA-Z0-9_]+)$/)
+
+        if (!matches) {
+          throw new Error(`Invalid label syntax: ${line}`)
+        }
+
+        const [ , name ] = matches
+
+        if (labels.has(name)) {
+          throw new Error(`Label ${name} declared multiple times`)
+        }
+
+        labels.set(name, { address: clone(address) })
+      } else if (line[0] == '$') {
+        // $name
+        // $name[size]
+
+        const matches = line.match(/^(\$[a-zA-Z0-9_]+)(\[([o+-]+|[-+]?[0-9]+)\])?$/)
+
+        if (!matches) {
+          throw new Error(`Invalid data syntax: ${line}`)
+        }
+
+        const [ , name, , sizeStr ] = matches
+        const size = s2t(sizeStr ?? '1')
+
+        if (datas.has(name)) {
+          throw new Error(`Data ${name} declared multiple times`)
+        }
+
+        if (t2n(size) <= 0) {
+          throw new Error(`Data ${name} has size <= 0`)
+        }
+
+        datas.set(name, { address: clone(address), size })
+        alu.add(address, size)
+      } else {
+        // mnemonic
+        // mnemonic operand1, operand2
+        // mnemonic operand1, operand2, operand3
+
         const [mnemonic, ...operands] = parseInstructionParts(line)
         const parsed = parseInstruction(mnemonic, operands)
 
@@ -56,57 +103,50 @@ export default function assemble(input: string): {
           throw new Error(`${mnemonic}: too many operands`)
         }
 
+        let isFirst = true
         for (const instruction of parsed) {
+          instructions.set(t2n(address), {
+            address: clone(address),
+            instruction,
+            line: isFirst ? line : '...',
+          })
+
           alu.add(address, n2t(1))
           if (instruction.z) alu.add(address, n2t(1))
-        }
-      } else {
-        // Label.
-        const labelName = line.substr(1)
 
-        if (labels.has(labelName)) {
-          console.warn('label redeclared:', labelName)
+          isFirst = false
         }
-
-        labels.set(labelName, clone(address))
       }
     }
   }
+
+  const symbols = new Map([
+    ...globalSymbols,
+    ...labels,
+    ...datas,
+  ])
 
   // Second pass: assemble instructions
-  const instructions = []
-  {
-    const address = s2t('ooooooooo')
+  console.group('Assembled object code')
+  for (const [ , { address, instruction, line } ] of instructions.entries()) {
+    const data = assembleInstruction(instruction, symbols)
 
-    for (const line of lines) {
-      if (line[0] != '.') {
-        // Instruction.
-        const [mnemonic, ...operands] = parseInstructionParts(line)
-        const parsed = parseInstruction(mnemonic, operands)
+    console.log(`${t2s(address)}:   ${t2s(data[0])}   |   ${line}`)
+    cart.store(data[0], address)
+    alu.add(address, n2t(1))
 
-        for (const instruction of parsed) {
-          // FIXME: pseudoinstructions which produce more than one
-          // instruction appear to be run twice when viewed in the
-          // debugger as we just show the source line twice
-          instructions[t2n(address)] = line
-
-          const data = assembleInstruction(instruction, labels)
-
-          console.log(`$${t2s(address)}: ${t2s(data[0])} ${line}`, instruction)
-          cart.store(data[0], address)
-          alu.add(address, n2t(1))
-
-          if (data[1]) {
-            console.log(`$${t2s(address)}: ${t2s(data[1])}`)
-            cart.store(data[1], address)
-            alu.add(address, n2t(1))
-          }
-        }
-      }
+    if (data[1]) {
+      console.log(`${t2s(address)}:   ${t2s(data[1])}   | ...`)
+      cart.store(data[1], address)
+      alu.add(address, n2t(1))
     }
   }
+  console.groupEnd()
 
-  return { mem: cart, debug: { labels, instructions } }
+  return {
+    mem: cart,
+    debug: { labels, datas, instructions },
+  }
 }
 
 function parseInstructionParts(line: string): string[] {
@@ -137,7 +177,7 @@ function parseInstructionParts(line: string): string[] {
 }
 
 // Mutates `operands`.
-function parseInstruction(mnemonic: string, operands: string[]): InstructionLabeled[] {
+function parseInstruction(mnemonic: string, operands: string[]): UnresolvedInstruction[] {
   switch (mnemonic.toUpperCase()) {
     // Pseudoinstructions
     case 'NOP': {
@@ -151,7 +191,7 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
       }]
     }
     case 'PSH': {
-      const instrs: InstructionLabeled[] = []
+      const instrs: UnresolvedInstruction[] = []
       while (operands.length) {
         instrs.push(
           // STA rX, sp
@@ -178,7 +218,7 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
       return instrs
     }
     case 'POP': {
-      const instrs: InstructionLabeled[] = []
+      const instrs: UnresolvedInstruction[] = []
       while (operands.length) {
         instrs.push(
           // ADD sp, 1
@@ -267,7 +307,19 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
       )]
     }
     case 'MOD': {
-      throw new Error('MOD is unimplemented')
+      return [expect(
+        unionParseYZ(
+          {
+            opcode: n2t(-35),
+            x: expect(
+              parseRegisterOperand(operands.shift()),
+              'MOD: operand 1 must be a register',
+            ),
+          },
+          operands.shift(),
+        ),
+        'MOD: operand 2 must be a register or immediate',
+      )]
     }
     case 'NEG': {
       return [expect(
@@ -416,6 +468,7 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
             ),
           },
           operands.shift(),
+          { allowAddress: true },
         ),
         'LDA: operand 2 must be a register or address',
       )]
@@ -431,6 +484,7 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
             ),
           },
           operands.shift(),
+          { allowAddress: true },
         ),
         'STA: operand 2 must be a register or address',
       )]
@@ -587,7 +641,7 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
             x: n2t(0),
           },
           operands.shift(),
-          { allowLabel: true },
+          { allowAddress: true },
         ),
         'JMP: operand must be a register or immediate address',
       )]
@@ -600,7 +654,7 @@ function parseInstruction(mnemonic: string, operands: string[]): InstructionLabe
             x: n2t(0),
           },
           operands.shift(),
-          { allowLabel: true },
+          { allowAddress: true },
         ),
         'JAL: operand must be a register or immediate address',
       )]
@@ -618,8 +672,8 @@ function isShort(value: Tryte): boolean {
 function unionParseYZ(
   partial: { opcode: Tryte; x: Tryte },
   operand: string | null | undefined,
-  options: { allowLabel: boolean } = { allowLabel: false },
-): InstructionLabeled | null {
+  options: { allowAddress: boolean } = { allowAddress: false },
+): UnresolvedInstruction | null {
   const asRegister = parseRegisterOperand(operand)
   if (asRegister) {
     return {
@@ -649,7 +703,7 @@ function unionParseYZ(
     }
   }
 
-  if (options.allowLabel) {
+  if (options.allowAddress) {
     const asAddress = parseAddressOperand(operand)
     if (asAddress) {
       return {
@@ -697,8 +751,6 @@ function parseRegisterOperand(
   }
 }
 
-const SYMBOL_REGEX = /^([^\[\(]+)(\[([+\-o0-9]+)\])?$/
-
 function parseImmediateOperand(
   operand: string | null | undefined,
 ): Tryte | null {
@@ -707,27 +759,6 @@ function parseImmediateOperand(
   }
 
   const trimmed = operand.trim()
-
-  if (trimmed[0] == '$') {
-    const match = trimmed.substr(1).toUpperCase().match(SYMBOL_REGEX)
-
-    if (!match) {
-      throw new Error(`Syntax error with symbol ${trimmed}`)
-    }
-
-    const [ , name, , offset ] = match
-    const symbol = symbols.get(name)
-
-    if (symbol && offset) {
-      const address = s2t(offset)
-      ;(new ALU()).add(address, symbol)
-      return address
-    } else if (symbol) {
-      return symbol
-    } else {
-      throw new Error(`Unknown symbol ${trimmed}`)
-    }
-  }
 
   try {
     return s2t(trimmed)
@@ -745,105 +776,11 @@ function parseAddressOperand(
 
   const trimmed = operand.trim()
 
-  if (trimmed[0] == '.') {
-    // Label
-    return trimmed.substr(1)
+  if (trimmed[0] == '.' || trimmed[0] == '$') {
+    // Label or data
+    return trimmed
   } else {
     // Raw address
     return parseImmediateOperand(operand)
-  }
-}
-
-function assembleOperandStr(
-  operand: string,
-  labels: LabelMap,
-): [Tryte, Tryte | null] {
-  const parseRegister = (operand: string) => {
-    const register = parseInt(operand.substr(1))
-
-    if (isNaN(register) || register < 0 || register > 11) {
-      throw new Error('Unknown register: ' + operand)
-    }
-
-    return register
-  }
-
-  if (operand[0] == 'r') {
-    // Register
-    return [n2t(parseRegister(operand) + 1), null]
-  } else if (operand[0] == '.') {
-    // Immediate, labeled
-    const addr = labels.get(operand.substr(1))
-
-    if (typeof addr == 'undefined') {
-      throw new Error('Undeclared ROM label: ' + operand.substr(1))
-    }
-
-    return [n2t(-13), n2t(addr)]
-  } else if (operand[0] == '*') {
-    if (operand[1] == 'r') {
-      // Register-indirect pointer
-      return [n2t(parseRegister(operand.substr(1)) - 11), null]
-    } else if (operand[2] == '.') {
-      throw new Error('ROM label not allowed here: ' + operand)
-    } else {
-      // Immediate-direct pointer
-      return [n2t(-12), s2t(operand.substr(1))]
-    }
-  } else {
-    // Immediate
-    return [n2t(-13), s2t(operand)]
-  }
-}
-
-function assembleOpcodeStr(str: string): Tryte {
-  switch (str.toUpperCase()) {
-    case 'ADD':
-      return n2t(-13)
-    // 12
-    case 'ADDC':
-      return n2t(-11)
-    case 'MUL':
-      return n2t(-10)
-    case 'DIV':
-      return n2t(-9)
-    case 'MOD':
-      return n2t(-8)
-    case 'NEG':
-      return n2t(-7)
-    case 'MIN':
-      return n2t(-6)
-    case 'MAX':
-      return n2t(-5)
-    case 'CON':
-      return n2t(-4)
-    case 'ANY':
-      return n2t(-3)
-    case 'RSH':
-      return n2t(-2)
-    case 'USH':
-      return n2t(-1)
-    case 'NOP':
-      return n2t(0)
-    case 'MOV':
-      return n2t(1)
-    case 'CMP':
-      return n2t(2)
-    case 'JMP':
-      return n2t(3)
-    case 'BEQ':
-      return n2t(4)
-    case 'BGT':
-      return n2t(5)
-    case 'BLT':
-      return n2t(6)
-    case 'JAL':
-      return n2t(7)
-    case 'LOD':
-      return n2t(8)
-    case 'XOR':
-      return n2t(9)
-    default:
-      throw new Error('Unknown instruction: ' + str)
   }
 }

@@ -74,6 +74,13 @@ export default class ALU {
     this.copy(a, n2t(Math.floor(t2n(a) / t2n(b))))
   }
 
+  // a %= b
+  //
+  // TODO: don't cheat
+  modulo(a: Tryte, b: Tryte) {
+    this.copy(a, n2t(Math.floor(t2n(a) % t2n(b))))
+  }
+
   // Equality/greater-than/less-than comparison.
   //
   //  a > b  ->  +

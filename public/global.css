@@ -10,19 +10,18 @@ html, body {
 	margin: 0;
 	padding: 0;
 
-	color: white;
-	background: black;
+	color: #fff;
+	background: #17111a;
 
-	font-family: monospace;
+	font-family: 'Fixedsys Excelsior', 'Fixedsys', monospace;
 }
 
 button, select {
 	font: inherit;
-	color: white;
-	border: 1px solid;
+	color: #b2bcc2;
+	border: .1em solid;
 	padding: .5em .8em;
-	background: black;
-	cursor: pointer;
+	background: #3e375c;
 }
 
 button:hover {

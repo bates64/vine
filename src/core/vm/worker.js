@@ -4,8 +4,6 @@ import { s2t } from './ALU'
 
 const vm = new VirtualMachine()
 
-console.log('worker says hello!')
-
 self.addEventListener('message', e => {
 	const { method, ...args } = e.data
 
