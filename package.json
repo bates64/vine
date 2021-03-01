@@ -12,7 +12,7 @@
     "events": "^3.1.0",
     "fix-whitespace": "^1.0.3",
     "pixi.js": "^5.2.1",
-    "three": "^0.111.0"
+    "three": "^0.125.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "11.0.2",
