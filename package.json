@@ -1,7 +1,7 @@
 {
   "name": "vine-console",
   "description": "Voxel-based 9-trit fantasy console with its own assembly language",
-  "author": "Alex Bates (https://imalex.xyz)",
+  "author": "Alex Bates (https://bates64.com)",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",

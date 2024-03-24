@@ -1,8 +1,8 @@
-# [![VINE](banner.png)](https://vine.imalex.xyz)
+# [![VINE](banner.png)](https://vine.bates64.com)
 
 VINE is an in-browser ternary fantasy console where you write actual assembly language.
 
-[![Screenshot](asm-screenshot.png)](https://vine.imalex.xyz)
+[![Screenshot](asm-screenshot.png)](https://vine.bates64.com)
 
 #### documentation
 
