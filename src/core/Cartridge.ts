@@ -14,7 +14,7 @@ export const examples: Cartridge[] = [
       ; Welcome to VINE!
       ;
       ; This example routine draws a green line to the screen.
-      ; Hit "Assemble and run" above to see in it action!
+      ; Hit "Assemble and run" above to see it in action!
       ; You can also see the assembled object code by opening
       ; the JavaScript console (Ctrl+Shift+J).
       ;
